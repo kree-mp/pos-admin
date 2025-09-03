@@ -1,84 +1,137 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Star, DollarSign, ArrowLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Star, DollarSign, ArrowLeft, Search, Edit3, Loader2, UtensilsCrossed, Package } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import useMenu from "@/hooks/use-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 
+interface MenuItem {
+  id: number;
+  categoryId: number;
+  itemName: string;
+  description: string | null;
+  rate: number;
+  image: string | null;
+  isAvailable: boolean;
+  createdAt: string;
+  updatedAt: string;
+  MenuCategory: {
+    id: number;
+    name: string;
+    description: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
 
-const mockMenuItems = [
-  {
-    id: 1,
-    name: "Grilled Salmon",
-    price: 24.99,
-    category: "main",
-    rating: 4.8,
-    available: true,
-    description: "Fresh Atlantic salmon with herbs",
-  },
-  {
-    id: 2,
-    name: "Caesar Salad",
-    price: 12.99,
-    category: "appetizer",
-    rating: 4.5,
-    available: true,
-    description: "Crisp romaine with parmesan",
-  },
-  {
-    id: 3,
-    name: "Chocolate Cake",
-    price: 8.99,
-    category: "dessert",
-    rating: 4.9,
-    available: false,
-    description: "Rich chocolate layer cake",
-  },
-  {
-    id: 4,
-    name: "Beef Burger",
-    price: 16.99,
-    category: "main",
-    rating: 4.6,
-    available: true,
-    description: "Angus beef with fresh toppings",
-  },
-  {
-    id: 5,
-    name: "Tomato Soup",
-    price: 7.99,
-    category: "appetizer",
-    rating: 4.3,
-    available: true,
-    description: "Creamy tomato with basil",
-  },
-]
-
-export function MenuItemsView() {
+export default function MenuItemsPage() {
   const router = useRouter();
+  const { data: menuData, isLoading, error } = useMenu();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    itemName: "",
+    description: "",
+    rate: 0,
+  });
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case "main":
-        return "bg-blue-100 text-blue-800"
-      case "appetizer":
-        return "bg-green-100 text-green-800"
-      case "dessert":
-        return "bg-pink-100 text-pink-800"
-      case "beverage":
-        return "bg-purple-100 text-purple-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
+  // Flatten all items from all categories for searching and display
+  const allItems = menuData?.flatMap(categoryData => 
+    categoryData.category.items || []
+  ) || [];
+
+  // Filter items based on search query
+  const filteredItems = allItems.filter(item =>
+    item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.MenuCategory?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleEditItem = (item: MenuItem) => {
+    setSelectedItem(item);
+    setEditFormData({
+      itemName: item.itemName,
+      description: item.description || "",
+      rate: item.rate,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    console.log("Updating item:", selectedItem?.id, "with data:", editFormData);
+    // Here you would typically make an API call to update the item
+    // For now, just console log the update
+    setIsEditDialogOpen(false);
+    setSelectedItem(null);
+  };
+
+  const handleCloseDialog = () => {
+    setIsEditDialogOpen(false);
+    setSelectedItem(null);
+    setEditFormData({
+      itemName: "",
+      description: "",
+      rate: 0,
+    });
+  };
+
+  const getCategoryColor = (categoryName: string) => {
+    const colorMap: { [key: string]: string } = {
+      "main": "bg-blue-100 text-blue-800",
+      "appetizer": "bg-green-100 text-green-800", 
+      "dessert": "bg-pink-100 text-pink-800",
+      "beverage": "bg-purple-100 text-purple-800",
+      "starter": "bg-yellow-100 text-yellow-800",
+      "snacks": "bg-orange-100 text-orange-800",
+    };
+    
+    return colorMap[categoryName.toLowerCase()] || "bg-gray-100 text-gray-800";
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !menuData) {
+    return (
+      <div className="space-y-4 p-4">
+        <div
+          onClick={() => router.back()}
+          className="px-3 py-2 bg-gray-300 rounded-md inline-block cursor-pointer"
+        >
+          <ArrowLeft className="text-3xl" />
+        </div>
+        <div className="text-center py-8">
+          <p className="text-red-500">Error loading menu items</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div>
         <div
-          onClick={() => {
-            router.back();
-          }}
+          onClick={() => router.back()}
           className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
         >
           <ArrowLeft className="text-3xl" />
@@ -87,38 +140,205 @@ export function MenuItemsView() {
         <p className="text-sm text-muted-foreground">Manage your restaurant menu</p>
       </div>
 
-      <div className="space-y-3">
-        {mockMenuItems.map((item) => (
-          <Card key={item.id} className={`border ${item.available ? "border-border" : "border-red-200 bg-red-50"}`}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-sm">{item.name}</h4>
-                    {!item.available && (
-                      <Badge variant="destructive" className="text-xs">
-                        Unavailable
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="w-3 h-3 text-green-600" />
-                      <span className="text-sm font-medium">{item.price}</span>
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        <Input
+          type="text"
+          placeholder="Search menu items, categories, or descriptions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 pr-4"
+        />
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <UtensilsCrossed className="w-5 h-5 text-blue-600" />
+                <p className="text-2xl font-bold text-blue-700">{allItems.length}</p>
+              </div>
+              <p className="text-sm text-blue-600">Total Items</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Package className="w-5 h-5 text-green-600" />
+                <p className="text-2xl font-bold text-green-700">
+                  {allItems.filter(item => item.isAvailable).length}
+                </p>
+              </div>
+              <p className="text-sm text-green-600">Available</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-purple-50 border-purple-200">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Star className="w-5 h-5 text-purple-600" />
+                <p className="text-2xl font-bold text-purple-700">
+                  {menuData?.length || 0}
+                </p>
+              </div>
+              <p className="text-sm text-purple-600">Categories</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Menu Items List */}
+      {filteredItems.length > 0 ? (
+        <div className="space-y-3">
+          {filteredItems.map((item) => (
+            <Card 
+              key={item.id} 
+              className={`border ${item.isAvailable ? "border-border" : "border-red-200 bg-red-50"}`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-semibold text-base">{item.itemName}</h4>
+                      {!item.isAvailable && (
+                        <Badge variant="destructive" className="text-xs">
+                          Unavailable
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                      <span className="text-sm">{item.rating}</span>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {item.description || "No description available"}
+                    </p>
+                    
+                    {/* Item Details */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4 text-green-600" />
+                          <span className="text-lg font-bold text-green-600">
+                            {formatCurrency(item.rate)}
+                          </span>
+                        </div>
+                        {item.MenuCategory && (
+                          <Badge className={getCategoryColor(item.MenuCategory.name)}>
+                            {item.MenuCategory.name}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditItem(item)}
+                        className="flex items-center gap-2"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Edit
+                      </Button>
                     </div>
                   </div>
                 </div>
-                <Badge className={getCategoryColor(item.category)}>{item.category}</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+                {/* Additional Info */}
+                <div className="pt-3 border-t border-border/50">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>ID: #{item.id}</span>
+                    <span>Updated: {new Date(item.updatedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UtensilsCrossed className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-muted-foreground text-lg font-medium">No menu items found</p>
+          <p className="text-muted-foreground text-sm">
+            {searchQuery ? "Try adjusting your search criteria" : "Menu items will appear here when they are added"}
+          </p>
+        </div>
+      )}
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit3 className="w-5 h-5" />
+              Edit Menu Item
+            </DialogTitle>
+            <DialogDescription>
+              Make changes to the menu item details
+            </DialogDescription>
+            <DialogClose onClose={handleCloseDialog} />
+          </DialogHeader>
+          
+          <div className="p-6 pt-2 space-y-4">
+            <div>
+              <Label htmlFor="itemName" className="text-sm font-medium">
+                Item Name
+              </Label>
+              <Input
+                id="itemName"
+                type="text"
+                value={editFormData.itemName}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                placeholder="Enter item name"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description" className="text-sm font-medium">
+                Description
+              </Label>
+              <Input
+                id="description"
+                type="text"
+                value={editFormData.description}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter item description"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="rate" className="text-sm font-medium">
+                Price
+              </Label>
+              <Input
+                id="rate"
+                type="number"
+                step="0.01"
+                value={editFormData.rate}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                placeholder="Enter item price"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={handleCloseDialog}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} className="bg-primary">
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

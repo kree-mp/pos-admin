@@ -68,6 +68,48 @@ interface Category {
   updatedAt: string;
 }
 
+export type PartiesResponse = {
+  statusCode: number;
+  data: Party[];
+  message: string;
+  status: boolean;
+};
+
+export interface Party {
+  id: number;
+  name: string;
+  type: "customer" | "supplier";
+  address: string;
+  phone: string;
+  email: string | null;
+  balance: number;
+  isActive: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export type PartyTransactionsResponse = {
+  statusCode: number;
+  data: PartyTransaction[];
+  message: string;
+  status: boolean;
+};
+
+export interface PartyTransaction {
+  id: number;
+  partyId: number;
+  type: "debit" | "credit";
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  reference: string | null;
+  description: string | null;
+  createdBy: number;
+  createdAt: string;
+  Party?: Party;
+  User?: User;
+}
+
 export type CartResponse = {
   statusCode: number;
   data: Cart[];

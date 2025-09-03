@@ -117,7 +117,7 @@ export default function TablesPage() {
             >
               <CardContent className="p-4">
                 <div className="text-center space-y-3">
-                  <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                  <div className="w-auto h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
                     <span className="text-xl font-bold text-primary">
                       {table.name}
                     </span>

@@ -1,5 +1,5 @@
 "use client";
-import { Cart, CartResponse } from "@/types/api-response";
+import { CartResponse } from "@/types/api-response";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "sonner";
