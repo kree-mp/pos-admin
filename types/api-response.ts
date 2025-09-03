@@ -161,4 +161,13 @@ export interface User {
   email: string | null;
   phone: string | null;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
+
+export type UsersResponse = {
+  statusCode: number;
+  data: User[];
+  message: string;
+  status: boolean;
+};
