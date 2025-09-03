@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Cambay } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
+import { ReactQueryProvider } from "@/lib/provider";
 
 const cambay = Cambay({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -62,10 +63,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`font-sans ${cambay.className}`}>
-        <Suspense fallback={null}>{children}</Suspense>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+        <ReactQueryProvider>
+          <Suspense fallback={null}>{children}</Suspense>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js')
@@ -77,8 +79,9 @@ export default function RootLayout({
                 });
               }
             `,
-          }}
-        />
+            }}
+          />
+        </ReactQueryProvider>
       </body>
     </html>
   );

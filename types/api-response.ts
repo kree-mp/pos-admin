@@ -84,6 +84,7 @@ export interface Cart {
   updatedAt: string;
   User: User | null;
   CartItems: CartItem[];
+  total: number;
 }
 
 export interface CartItem {
