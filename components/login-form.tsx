@@ -16,11 +16,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Shield, Eye, EyeOff } from "lucide-react";
 
-interface LoginFormProps {
-  onLogin: (success: boolean) => void;
-}
-
-export function LoginForm({ onLogin }: LoginFormProps) {
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,18 +28,7 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     setIsLoading(true);
     setError("");
 
-    // Simple mock authentication - replace with real auth
-    if (email === "admin@example.com" && password === "admin123") {
-      setTimeout(() => {
-        onLogin(true);
-        setIsLoading(false);
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setError("Invalid email or password");
-        setIsLoading(false);
-      }, 1000);
-    }
+    
   };
 
   return (
