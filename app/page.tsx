@@ -10,7 +10,6 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
     const authStatus = localStorage.getItem("adminAuth");
     if (authStatus === "true") {
       setIsAuthenticated(true);
