@@ -2,85 +2,59 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Clock, ArrowLeft } from "lucide-react";
+import { Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import useTables from "@/hooks/use-tables";
 
-
-const mockTables = [
-  {
-    id: 1,
-    number: "T-01",
-    capacity: 4,
-    status: "occupied",
-    currentGuests: 3,
-    timeOccupied: "45 min",
-    location: "Main Floor",
-  },
-  {
-    id: 2,
-    number: "T-02",
-    capacity: 2,
-    status: "available",
-    currentGuests: 0,
-    timeOccupied: null,
-    location: "Main Floor",
-  },
-  {
-    id: 3,
-    number: "T-03",
-    capacity: 6,
-    status: "reserved",
-    currentGuests: 0,
-    timeOccupied: null,
-    location: "Main Floor",
-  },
-  {
-    id: 4,
-    number: "T-04",
-    capacity: 8,
-    status: "occupied",
-    currentGuests: 6,
-    timeOccupied: "1h 20min",
-    location: "Private Room",
-  },
-  {
-    id: 5,
-    number: "T-05",
-    capacity: 4,
-    status: "cleaning",
-    currentGuests: 0,
-    timeOccupied: null,
-    location: "Main Floor",
-  },
-];
-
-export function TablesView() {
+export default function TablesPage() {
   const router = useRouter();
+  const { data: tables, isLoading, error } = useTables();
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
         return "bg-green-100 text-green-800";
-      case "occupied":
+      case "unavailable":
         return "bg-red-100 text-red-800";
       case "reserved":
         return "bg-yellow-100 text-yellow-800";
-      case "cleaning":
-        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const availableTables = mockTables.filter(
+  const handleTableClick = (tableId: number) => {
+    router.push(`/dashboard/tables/${tableId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !tables) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Error loading tables</p>
+      </div>
+    );
+  }
+
+  const availableTables = tables.filter(
     (table) => table.status === "available"
   ).length;
-  const occupiedTables = mockTables.filter(
-    (table) => table.status === "occupied"
+  const unavailableTables = tables.filter(
+    (table) => table.status === "unavailable"
+  ).length;
+  const reservedTables = tables.filter(
+    (table) => table.status === "reserved"
   ).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       <div>
         <div
           onClick={() => {
@@ -98,8 +72,7 @@ export function TablesView() {
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
             <div className="text-center">
@@ -115,54 +88,102 @@ export function TablesView() {
           <CardContent className="p-4">
             <div className="text-center">
               <p className="text-2xl font-bold text-red-700">
-                {occupiedTables}
+                {unavailableTables}
               </p>
-              <p className="text-sm text-red-600">Occupied</p>
+              <p className="text-sm text-red-600">Unavailable</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-yellow-700">
+                {reservedTables}
+              </p>
+              <p className="text-sm text-yellow-600">Reserved</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tables List */}
-      <div className="space-y-3">
-        {mockTables.map((table) => (
-          <Card key={table.id} className="border border-border">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <span className="font-bold text-primary">
-                      {table.number}
+      {tables.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3">
+          {tables.map((table) => (
+            <Card
+              key={table.id}
+              className="border border-border cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95"
+              onClick={() => handleTableClick(table.id)}
+            >
+              <CardContent className="p-4">
+                <div className="text-center space-y-3">
+                  <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
+                    <span className="text-xl font-bold text-primary">
+                      {table.name}
                     </span>
                   </div>
-                  <div>
-                    <p className="font-medium text-sm">{table.location}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="w-3 h-3" />
-                      <span>Seats {table.capacity}</span>
-                    </div>
-                  </div>
-                </div>
-                <Badge className={getStatusColor(table.status)}>
-                  {table.status}
-                </Badge>
-              </div>
 
-              {table.status === "occupied" && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {table.currentGuests} of {table.capacity} guests
-                  </span>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    <span>{table.timeOccupied}</span>
+                  <div>
+                    <h3 className="font-semibold text-base text-foreground">
+                      Table {table.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {new Date(table.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <Badge
+                    className={`${getStatusColor(table.status)} px-3 py-1`}
+                  >
+                    {table.status.charAt(0).toUpperCase() +
+                      table.status.slice(1)}
+                  </Badge>
+
+                  <div className="pt-2 border-t border-border/50">
+                    <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        Updated:{" "}
+                        {new Date(table.updatedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {table.status === "unavailable" && (
+                      <p className="text-xs text-red-600 mt-1 font-medium">
+                        Currently Unavailable
+                      </p>
+                    )}
+
+                    {table.status === "reserved" && (
+                      <p className="text-xs text-yellow-600 mt-1 font-medium">
+                        Reserved
+                      </p>
+                    )}
+
+                    {table.status === "available" && (
+                      <p className="text-xs text-green-600 mt-1 font-medium">
+                        Ready for Service
+                      </p>
+                    )}
                   </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Clock className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-muted-foreground text-lg font-medium">
+            No tables found
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Tables will appear here when they are created
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,10 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
-import useExpenseReports, {
-  useExpenseReportsDateRange,
-  TimePeriod,
-} from "@/hooks/use-expense-reports";
+import useExpenseReports, { useExpenseReportsDateRange, TimePeriod } from "@/hooks/use-expense-reports";
 import {
   DollarSign,
   ArrowLeft,
@@ -36,72 +33,72 @@ const TIME_PERIODS: { value: TimePeriod; label: string }[] = [
 
 export default function ExpenseReportsView() {
   const router = useRouter();
-
+  
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("1day");
   const [isCustomDateRange, setIsCustomDateRange] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>();
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
-
+  
   const itemsPerPage = 20;
 
-  const { data: periodExpenseData, isLoading: isPeriodLoading } =
-    useExpenseReports(selectedPeriod);
+  // Use period-based query by default
+  const { 
+    data: periodExpenseData, 
+    isLoading: isPeriodLoading 
+  } = useExpenseReports(selectedPeriod);
 
-  const { data: customExpenseData, isLoading: isCustomLoading } =
-    useExpenseReportsDateRange(
-      customStartDate?.toISOString().split("T")[0],
-      customEndDate?.toISOString().split("T")[0]
-    );
+  // Use custom date range query when needed
+  const { 
+    data: customExpenseData, 
+    isLoading: isCustomLoading 
+  } = useExpenseReportsDateRange(
+    customStartDate?.toISOString().split('T')[0],
+    customEndDate?.toISOString().split('T')[0]
+  );
 
+  // Choose which data to use
   const expenseData = isCustomDateRange ? customExpenseData : periodExpenseData;
   const isLoading = isCustomDateRange ? isCustomLoading : isPeriodLoading;
 
-  const { totalPages, currentPageData, expenseSummary, categoryBreakdown } =
-    useMemo(() => {
-      if (!expenseData)
-        return {
-          totalPages: 0,
-          currentPageData: [],
-          expenseSummary: {
-            totalExpenses: 0,
-            totalTransactions: 0,
-            avgExpenseValue: 0,
-          },
-          categoryBreakdown: {},
-        };
+  const { totalPages, currentPageData, expenseSummary, categoryBreakdown } = useMemo(() => {
+    if (!expenseData) return { 
+      totalPages: 0, 
+      currentPageData: [], 
+      expenseSummary: {
+        totalExpenses: 0,
+        totalTransactions: 0,
+        avgExpenseValue: 0,
+      },
+      categoryBreakdown: {}
+    };
 
-      const total = Math.ceil(expenseData.length / itemsPerPage);
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedData = expenseData.slice(startIndex, endIndex);
+    const total = Math.ceil(expenseData.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = expenseData.slice(startIndex, endIndex);
 
-      const summary = {
-        totalExpenses: expenseData.reduce(
-          (sum, expense) => sum + expense.amount,
-          0
-        ),
-        totalTransactions: expenseData.length,
-        avgExpenseValue:
-          expenseData.length > 0
-            ? expenseData.reduce((sum, expense) => sum + expense.amount, 0) /
-              expenseData.length
-            : 0,
-      };
+    const summary = {
+      totalExpenses: expenseData.reduce((sum, expense) => sum + expense.amount, 0),
+      totalTransactions: expenseData.length,
+      avgExpenseValue: expenseData.length > 0 ? 
+        expenseData.reduce((sum, expense) => sum + expense.amount, 0) / expenseData.length : 0,
+    };
 
-      const breakdown = expenseData.reduce((acc, expense) => {
-        const categoryName = expense.ExpenseCategory?.name || "Uncategorized";
-        acc[categoryName] = (acc[categoryName] || 0) + expense.amount;
-        return acc;
-      }, {} as Record<string, number>);
+    // Calculate category breakdown
+    const breakdown = expenseData.reduce((acc, expense) => {
+      const categoryName = expense.ExpenseCategory?.name || 'Uncategorized';
+      acc[categoryName] = (acc[categoryName] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
 
-      return {
-        totalPages: total,
-        currentPageData: paginatedData,
-        expenseSummary: summary,
-        categoryBreakdown: breakdown,
-      };
-    }, [expenseData, currentPage]);
+    return {
+      totalPages: total,
+      currentPageData: paginatedData,
+      expenseSummary: summary,
+      categoryBreakdown: breakdown,
+    };
+  }, [expenseData, currentPage]);
 
   const handlePeriodChange = (period: TimePeriod) => {
     setSelectedPeriod(period);
@@ -138,20 +135,16 @@ export default function ExpenseReportsView() {
 
   const getCategoryIcon = (categoryName: string) => {
     const name = categoryName.toLowerCase();
-    if (name.includes("food") || name.includes("inventory")) {
+    if (name.includes('food') || name.includes('inventory')) {
       return <Utensils className="w-4 h-4" />;
     }
-    if (
-      name.includes("util") ||
-      name.includes("electric") ||
-      name.includes("water")
-    ) {
+    if (name.includes('util') || name.includes('electric') || name.includes('water')) {
       return <Zap className="w-4 h-4" />;
     }
-    if (name.includes("equipment") || name.includes("maintenance")) {
+    if (name.includes('equipment') || name.includes('maintenance')) {
       return <Package className="w-4 h-4" />;
     }
-    if (name.includes("service") || name.includes("delivery")) {
+    if (name.includes('service') || name.includes('delivery')) {
       return <Truck className="w-4 h-4" />;
     }
     return <Receipt className="w-4 h-4" />;
@@ -159,20 +152,16 @@ export default function ExpenseReportsView() {
 
   const getCategoryColor = (categoryName: string) => {
     const name = categoryName.toLowerCase();
-    if (name.includes("food") || name.includes("inventory")) {
+    if (name.includes('food') || name.includes('inventory')) {
       return "bg-orange-100 text-orange-800";
     }
-    if (
-      name.includes("util") ||
-      name.includes("electric") ||
-      name.includes("water")
-    ) {
+    if (name.includes('util') || name.includes('electric') || name.includes('water')) {
       return "bg-yellow-100 text-yellow-800";
     }
-    if (name.includes("equipment") || name.includes("maintenance")) {
+    if (name.includes('equipment') || name.includes('maintenance')) {
       return "bg-blue-100 text-blue-800";
     }
-    if (name.includes("service") || name.includes("delivery")) {
+    if (name.includes('service') || name.includes('delivery')) {
       return "bg-purple-100 text-purple-800";
     }
     return "bg-gray-100 text-gray-800";
@@ -206,7 +195,7 @@ export default function ExpenseReportsView() {
         >
           <ArrowLeft className="w-5 h-5" />
         </div>
-
+        
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground mb-1">
@@ -226,11 +215,7 @@ export default function ExpenseReportsView() {
             {TIME_PERIODS.map((period) => (
               <Button
                 key={period.value}
-                variant={
-                  selectedPeriod === period.value && !isCustomDateRange
-                    ? "default"
-                    : "outline"
-                }
+                variant={selectedPeriod === period.value && !isCustomDateRange ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange(period.value)}
                 className="h-8 px-3"
@@ -256,9 +241,7 @@ export default function ExpenseReportsView() {
                 <Label className="text-xs text-muted-foreground">From:</Label>
                 <DatePicker
                   date={customStartDate}
-                  onDateChange={(date) =>
-                    handleCustomDateChange(date, customEndDate)
-                  }
+                  onDateChange={(date) => handleCustomDateChange(date, customEndDate)}
                   placeholder="Start date"
                 />
               </div>
@@ -266,9 +249,7 @@ export default function ExpenseReportsView() {
                 <Label className="text-xs text-muted-foreground">To:</Label>
                 <DatePicker
                   date={customEndDate}
-                  onDateChange={(date) =>
-                    handleCustomDateChange(customStartDate, date)
-                  }
+                  onDateChange={(date) => handleCustomDateChange(customStartDate, date)}
                   placeholder="End date"
                 />
               </div>
@@ -298,13 +279,9 @@ export default function ExpenseReportsView() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Receipt className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">
-                Transactions
-              </span>
+              <span className="text-xs text-muted-foreground">Transactions</span>
             </div>
-            <p className="text-lg font-bold">
-              {expenseSummary.totalTransactions}
-            </p>
+            <p className="text-lg font-bold">{expenseSummary.totalTransactions}</p>
             <p className="text-xs text-muted-foreground mt-1">
               Categories: {Object.keys(categoryBreakdown).length}
             </p>
@@ -321,10 +298,7 @@ export default function ExpenseReportsView() {
           <CardContent className="pt-0">
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(categoryBreakdown).map(([category, amount]) => (
-                <div
-                  key={category}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                >
+                <div key={category} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div className="flex items-center gap-2">
                     {getCategoryIcon(category)}
                     <span className="text-sm font-medium">{category}</span>
@@ -373,9 +347,7 @@ export default function ExpenseReportsView() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3">
                       <div className="text-muted-foreground">
-                        {getCategoryIcon(
-                          expense.ExpenseCategory?.name || "Uncategorized"
-                        )}
+                        {getCategoryIcon(expense.ExpenseCategory?.name || 'Uncategorized')}
                       </div>
                       <div>
                         <h4 className="font-medium text-sm mb-1">
@@ -404,29 +376,22 @@ export default function ExpenseReportsView() {
                       <p className="font-bold text-red-600 text-lg">
                         ${expense.amount.toFixed(2)}
                       </p>
-                      <Badge
-                        className={getCategoryColor(
-                          expense.ExpenseCategory?.name || "Uncategorized"
-                        )}
-                      >
-                        {expense.ExpenseCategory?.name || "Uncategorized"}
+                      <Badge className={getCategoryColor(expense.ExpenseCategory?.name || 'Uncategorized')}>
+                        {expense.ExpenseCategory?.name || 'Uncategorized'}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Additional Details */}
-                  {expense.Party &&
-                    (expense.Party.phone || expense.Party.address) && (
-                      <div className="text-xs text-muted-foreground border-t pt-2 mb-2">
-                        <div className="font-medium">Vendor Details:</div>
-                        {expense.Party.phone && (
-                          <div>Phone: {expense.Party.phone}</div>
-                        )}
-                        {expense.Party.address && (
-                          <div>Address: {expense.Party.address}</div>
-                        )}
-                      </div>
-                    )}
+                  {expense.Party && (expense.Party.phone || expense.Party.address) && (
+                    <div className="text-xs text-muted-foreground border-t pt-2 mb-2">
+                      <div className="font-medium">Vendor Details:</div>
+                      {expense.Party.phone && <div>Phone: {expense.Party.phone}</div>}
+                      {expense.Party.address && (
+                        <div>Address: {expense.Party.address}</div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Timestamp and Staff */}
                   <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t">
@@ -446,10 +411,7 @@ export default function ExpenseReportsView() {
               <div className="flex items-center justify-between">
                 <div className="text-xs text-muted-foreground">
                   {(currentPage - 1) * itemsPerPage + 1}-
-                  {Math.min(
-                    currentPage * itemsPerPage,
-                    expenseData?.length || 0
-                  )}{" "}
+                  {Math.min(currentPage * itemsPerPage, expenseData?.length || 0)}{" "}
                   of {expenseData?.length || 0}
                 </div>
                 <div className="flex items-center gap-1">
