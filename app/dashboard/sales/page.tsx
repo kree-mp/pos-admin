@@ -1,10 +1,15 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ShoppingCart,
+} from "lucide-react";
 
 interface SalesViewProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 const mockSalesData = [
@@ -40,21 +45,25 @@ const mockSalesData = [
     type: "Delivery",
     trend: "up",
   },
-]
+];
 
 const salesSummary = {
   totalSales: 2450.0,
   totalOrders: 68,
   avgOrderValue: 36.03,
   topSellingDay: "Saturday",
-}
+};
 
 export function SalesView({ onBack }: SalesViewProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Sales Overview</h2>
-        <p className="text-sm text-muted-foreground">Track your revenue and performance</p>
+        <h2 className="text-lg font-semibold text-foreground mb-1">
+          Sales Overview
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Track your revenue and performance
+        </p>
       </div>
 
       {/* Summary Cards */}
@@ -65,7 +74,9 @@ export function SalesView({ onBack }: SalesViewProps) {
               <DollarSign className="w-4 h-4 text-green-600" />
               <span className="text-xs text-muted-foreground">Total Sales</span>
             </div>
-            <p className="text-lg font-bold">${salesSummary.totalSales.toFixed(2)}</p>
+            <p className="text-lg font-bold">
+              ${salesSummary.totalSales.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
 
@@ -73,7 +84,9 @@ export function SalesView({ onBack }: SalesViewProps) {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <ShoppingCart className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-muted-foreground">Total Orders</span>
+              <span className="text-xs text-muted-foreground">
+                Total Orders
+              </span>
             </div>
             <p className="text-lg font-bold">{salesSummary.totalOrders}</p>
           </CardContent>
@@ -95,7 +108,9 @@ export function SalesView({ onBack }: SalesViewProps) {
                     ) : (
                       <TrendingDown className="w-4 h-4 text-red-600" />
                     )}
-                    <span className="text-xs text-muted-foreground">{sale.type}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {sale.type}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -108,6 +123,5 @@ export function SalesView({ onBack }: SalesViewProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
