@@ -2,11 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Clock, MapPin } from "lucide-react";
+import { Calendar, Users, Clock, MapPin, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface PartiesViewProps {
-  onBack: () => void;
-}
 
 const mockParties = [
   {
@@ -51,7 +49,9 @@ const mockParties = [
   },
 ];
 
-export function PartiesView({ onBack }: PartiesViewProps) {
+export function PartiesView() {
+  const router = useRouter();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -68,6 +68,14 @@ export function PartiesView({ onBack }: PartiesViewProps) {
   return (
     <div className="space-y-4">
       <div>
+        <div
+          onClick={() => {
+            router.back();
+          }}
+          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
+        >
+          <ArrowLeft className="text-3xl" />
+        </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">
           Party Bookings
         </h2>

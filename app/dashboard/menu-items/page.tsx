@@ -2,11 +2,9 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, DollarSign } from "lucide-react"
+import { Star, DollarSign, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-interface MenuItemsViewProps {
-  onBack: () => void
-}
 
 const mockMenuItems = [
   {
@@ -56,7 +54,9 @@ const mockMenuItems = [
   },
 ]
 
-export function MenuItemsView({ onBack }: MenuItemsViewProps) {
+export function MenuItemsView() {
+  const router = useRouter();
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "main":
@@ -75,6 +75,14 @@ export function MenuItemsView({ onBack }: MenuItemsViewProps) {
   return (
     <div className="space-y-4">
       <div>
+        <div
+          onClick={() => {
+            router.back();
+          }}
+          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
+        >
+          <ArrowLeft className="text-3xl" />
+        </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">Menu Items</h2>
         <p className="text-sm text-muted-foreground">Manage your restaurant menu</p>
       </div>

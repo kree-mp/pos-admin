@@ -1,12 +1,10 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Users, Clock } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, Clock, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-interface TablesViewProps {
-  onBack: () => void
-}
 
 const mockTables = [
   {
@@ -54,32 +52,50 @@ const mockTables = [
     timeOccupied: null,
     location: "Main Floor",
   },
-]
+];
 
-export function TablesView({ onBack }: TablesViewProps) {
+export function TablesView() {
+  const router = useRouter();
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "occupied":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       case "reserved":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "cleaning":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
-  const availableTables = mockTables.filter((table) => table.status === "available").length
-  const occupiedTables = mockTables.filter((table) => table.status === "occupied").length
+  const availableTables = mockTables.filter(
+    (table) => table.status === "available"
+  ).length;
+  const occupiedTables = mockTables.filter(
+    (table) => table.status === "occupied"
+  ).length;
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Table Management</h2>
-        <p className="text-sm text-muted-foreground">Monitor table status and availability</p>
+        <div
+          onClick={() => {
+            router.back();
+          }}
+          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
+        >
+          <ArrowLeft className="text-3xl" />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground mb-1">
+          Table Management
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Monitor table status and availability
+        </p>
       </div>
 
       {/* Summary Cards */}
@@ -87,7 +103,9 @@ export function TablesView({ onBack }: TablesViewProps) {
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-700">{availableTables}</p>
+              <p className="text-2xl font-bold text-green-700">
+                {availableTables}
+              </p>
               <p className="text-sm text-green-600">Available</p>
             </div>
           </CardContent>
@@ -96,7 +114,9 @@ export function TablesView({ onBack }: TablesViewProps) {
         <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4">
             <div className="text-center">
-              <p className="text-2xl font-bold text-red-700">{occupiedTables}</p>
+              <p className="text-2xl font-bold text-red-700">
+                {occupiedTables}
+              </p>
               <p className="text-sm text-red-600">Occupied</p>
             </div>
           </CardContent>
@@ -111,7 +131,9 @@ export function TablesView({ onBack }: TablesViewProps) {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <span className="font-bold text-primary">{table.number}</span>
+                    <span className="font-bold text-primary">
+                      {table.number}
+                    </span>
                   </div>
                   <div>
                     <p className="font-medium text-sm">{table.location}</p>
@@ -121,7 +143,9 @@ export function TablesView({ onBack }: TablesViewProps) {
                     </div>
                   </div>
                 </div>
-                <Badge className={getStatusColor(table.status)}>{table.status}</Badge>
+                <Badge className={getStatusColor(table.status)}>
+                  {table.status}
+                </Badge>
               </div>
 
               {table.status === "occupied" && (
@@ -140,5 +164,5 @@ export function TablesView({ onBack }: TablesViewProps) {
         ))}
       </div>
     </div>
-  )
+  );
 }

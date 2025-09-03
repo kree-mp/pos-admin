@@ -6,11 +6,9 @@ import {
   TrendingDown,
   DollarSign,
   ShoppingCart,
+  ArrowLeft,
 } from "lucide-react";
-
-interface SalesViewProps {
-  onBack: () => void;
-}
+import { useRouter } from "next/navigation";
 
 const mockSalesData = [
   {
@@ -54,10 +52,19 @@ const salesSummary = {
   topSellingDay: "Saturday",
 };
 
-export function SalesView({ onBack }: SalesViewProps) {
+export default function SalesView() {
+  const router = useRouter();
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-6">
       <div>
+        <div
+          onClick={() => {
+            router.back();
+          }}
+          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
+        >
+          <ArrowLeft className="text-3xl" />
+        </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">
           Sales Overview
         </h2>
