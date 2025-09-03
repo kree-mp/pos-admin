@@ -171,3 +171,68 @@ export type UsersResponse = {
   message: string;
   status: boolean;
 };
+
+export type DaybookTodaySummaryResponse = {
+  statusCode: number;
+  data: {
+    summary: {
+      openingBalance: {
+        cash: number;
+        online: number;
+      };
+      sales: {
+        cash: number;
+        online: number;
+      };
+      expenses: {
+        cash: number;
+        online: number;
+      };
+      netCash: number;
+      netOnline: number;
+      totalNet: number;
+    };
+    transactions: DaybookTransaction[];
+  };
+  message: string;
+  status: boolean;
+};
+
+export interface DaybookTransaction {
+  id: number;
+  daybookId: number;
+  transactionType: "opening_balance" | "sale" | "expense";
+  paymentMode: "cash" | "online";
+  referenceId: number | null;
+  amount: number;
+  description: string;
+  timestamp: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DaybookSummaryResponse = {
+  statusCode: number;
+  data: {
+    date: string;
+    openingBalance: {
+      cash: number;
+      online: number;
+    };
+    sales: {
+      cash: number;
+      online: number;
+      count: number;
+    };
+    expenses: {
+      cash: number;
+      online: number;
+      count: number;
+    };
+    netCash: number;
+    netOnline: number;
+    totalNet: number;
+  };
+  message: string;
+  status: boolean;
+};

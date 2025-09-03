@@ -1,136 +1,307 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, Shield, ArrowLeft } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
+import { 
+  ArrowLeft, 
+  Calendar,
+  TrendingUp, 
+  TrendingDown, 
+  Wallet, 
+  CreditCard,
+  DollarSign,
+  Clock,
+  Receipt
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+import useDaybook from "@/hooks/use-daybook";
+import { DaybookTransaction } from "@/types/api-response";
 
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john@example.com",
-    phone: "+1 (555) 123-4567",
-    role: "admin",
-    status: "active",
-    lastLogin: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    phone: "+1 (555) 234-5678",
-    role: "manager",
-    status: "active",
-    lastLogin: "2024-01-14",
-  },
-  {
-    id: 3,
-    name: "Mike Wilson",
-    email: "mike@example.com",
-    phone: "+1 (555) 345-6789",
-    role: "staff",
-    status: "active",
-    lastLogin: "2024-01-13",
-  },
-  {
-    id: 4,
-    name: "Emma Davis",
-    email: "emma@example.com",
-    phone: "+1 (555) 456-7890",
-    role: "staff",
-    status: "inactive",
-    lastLogin: "2024-01-10",
-  },
-];
-
-export function UsersView() {
+export default function DaybookPage() {
   const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  
+  const dateString = selectedDate.toISOString().split('T')[0];
+  const { data: daybookData, isLoading, error } = useDaybook(dateString);
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-red-100 text-red-800";
-      case "manager":
-        return "bg-blue-100 text-blue-800";
-      case "staff":
-        return "bg-green-100 text-green-800";
+  const isToday = dateString === new Date().toISOString().split('T')[0];
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'NPR',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'sale':
+        return <TrendingUp className="w-4 h-4 text-green-600" />;
+      case 'expense':
+        return <TrendingDown className="w-4 h-4 text-red-600" />;
+      case 'opening_balance':
+        return <Wallet className="w-4 h-4 text-blue-600" />;
       default:
-        return "bg-gray-100 text-gray-800";
+        return <Receipt className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "inactive":
-        return "bg-gray-100 text-gray-800";
+  const getTransactionColor = (type: string) => {
+    switch (type) {
+      case 'sale':
+        return 'bg-green-50 border-green-200';
+      case 'expense':
+        return 'bg-red-50 border-red-200';
+      case 'opening_balance':
+        return 'bg-blue-50 border-blue-200';
       default:
-        return "bg-gray-100 text-gray-800";
+        return 'bg-gray-50 border-gray-200';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error || !daybookData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Failed to load daybook data</p>
+      </div>
+    );
+  }
+
+  const summary = 'summary' in daybookData ? daybookData.summary : daybookData;
+  const transactions = 'transactions' in daybookData ? daybookData.transactions : [];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <div
-          onClick={() => {
-            router.back();
-          }}
-          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
-        >
-          <ArrowLeft className="text-3xl" />
+    <div className="space-y-6 p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.back()}
+            className="p-2 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Daybook</h1>
+            <p className="text-sm text-muted-foreground">
+              {isToday ? "Today's" : "Daily"} financial summary and transactions
+            </p>
+          </div>
         </div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">
-          User Management
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Manage staff and admin accounts
-        </p>
+        
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          <DatePicker
+            date={selectedDate}
+            onDateChange={(date) => setSelectedDate(date || new Date())}
+          />
+        </div>
       </div>
 
-      <div className="space-y-3">
-        {mockUsers.map((user) => (
-          <Card key={user.id} className="border border-border">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-sm">{user.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className={getRoleColor(user.role)}>
-                        <Shield className="w-3 h-3 mr-1" />
-                        {user.role}
-                      </Badge>
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status}
-                      </Badge>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Opening Balance */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Opening Balance</CardTitle>
+            <Wallet className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Cash:</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(summary.openingBalance.cash)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Online:</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(summary.openingBalance.online)}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sales */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sales</CardTitle>
+            <TrendingUp className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Cash:</span>
+                <span className="text-sm font-medium text-green-600">
+                  {formatCurrency(summary.sales.cash)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Online:</span>
+                <span className="text-sm font-medium text-green-600">
+                  {formatCurrency(summary.sales.online)}
+                </span>
+              </div>
+              {'count' in summary.sales && typeof (summary.sales as {count?: number}).count === 'number' && (
+                <div className="text-xs text-muted-foreground pt-1">
+                  {(summary.sales as {count: number}).count} transactions
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Expenses</CardTitle>
+            <TrendingDown className="w-4 h-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Cash:</span>
+                <span className="text-sm font-medium text-red-600">
+                  {formatCurrency(summary.expenses.cash)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Online:</span>
+                <span className="text-sm font-medium text-red-600">
+                  {formatCurrency(summary.expenses.online)}
+                </span>
+              </div>
+              {'count' in summary.expenses && typeof (summary.expenses as {count?: number}).count === 'number' && (
+                <div className="text-xs text-muted-foreground pt-1">
+                  {(summary.expenses as {count: number}).count} transactions
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Net Total */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Total</CardTitle>
+            <DollarSign className="w-4 h-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Cash:</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(summary.netCash)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-3 h-3" />
+                <span className="text-xs text-muted-foreground">Online:</span>
+                <span className="text-sm font-medium">
+                  {formatCurrency(summary.netOnline)}
+                </span>
+              </div>
+              <div className="text-sm font-bold text-primary pt-1 border-t">
+                Total: {formatCurrency(summary.totalNet)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Transactions List - Only show for today */}
+      {isToday && transactions && transactions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Today&apos;s Transactions ({transactions.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {transactions.map((transaction: DaybookTransaction) => (
+                <div
+                  key={transaction.id}
+                  className={`p-3 rounded-lg border ${getTransactionColor(transaction.transactionType)}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {getTransactionIcon(transaction.transactionType)}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm capitalize">
+                            {transaction.transactionType.replace('_', ' ')}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {transaction.paymentMode}
+                          </Badge>
+                          {transaction.referenceId && (
+                            <Badge variant="outline" className="text-xs">
+                              #{transaction.referenceId}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {transaction.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">
+                        {formatCurrency(transaction.amount)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatTime(transaction.timestamp)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="w-3 h-3" />
-                  <span>{user.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="w-3 h-3" />
-                  <span>{user.phone}</span>
-                </div>
-                <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-                  Last login: {user.lastLogin}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* No transactions message for historical dates */}
+      {!isToday && (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">
+              Transaction details are only available for today&apos;s records
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
