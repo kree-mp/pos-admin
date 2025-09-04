@@ -248,10 +248,10 @@ export default function SalesReportsView() {
               <span className="text-xs text-muted-foreground">Total Sales</span>
             </div>
             <p className="text-lg font-bold">
-              ${salesSummary.totalSales.toFixed(2)}
+              रु.{salesSummary.totalSales.toFixed(2)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Avg: ${salesSummary.avgOrderValue.toFixed(2)}
+              Avg: रु.{salesSummary.avgOrderValue.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -327,16 +327,16 @@ export default function SalesReportsView() {
                   {/* Financial Summary */}
                   <div className="flex items-center justify-between mb-3 p-2 bg-gray-50 rounded">
                     <span className="font-semibold text-lg">
-                      ${sale.total.toFixed(2)}
+                      रु.{sale.total.toFixed(2)}
                     </span>
                     <div className="text-right text-sm text-muted-foreground">
-                      <div>Subtotal: ${sale.subTotal.toFixed(2)}</div>
+                      <div>Subtotal: रु.{sale.subTotal.toFixed(2)}</div>
                       {sale.discount > 0 && (
                         <div className="text-red-600">
-                          Discount: -${sale.discount.toFixed(2)}
+                          Discount: -रु.{sale.discount.toFixed(2)}
                         </div>
                       )}
-                      {sale.tax > 0 && <div>Tax: ${sale.tax.toFixed(2)}</div>}
+                      {sale.tax > 0 && <div>Tax: रु.{sale.tax.toFixed(2)}</div>}
                     </div>
                   </div>
 
@@ -391,7 +391,7 @@ export default function SalesReportsView() {
                             )}
                           </div>
                           <span className="font-medium">
-                            ${item.totalPrice.toFixed(2)}
+                            रु.{item.totalPrice.toFixed(2)}
                           </span>
                         </div>
                       ))}
@@ -410,7 +410,7 @@ export default function SalesReportsView() {
                           >
                             <span>{payment.PaymentMethod?.name}</span>
                             <span className="font-medium text-green-700">
-                              ${payment.amount.toFixed(2)}
+                              रु.{payment.amount.toFixed(2)}
                             </span>
                           </div>
                         ))}
@@ -428,7 +428,7 @@ export default function SalesReportsView() {
                       )}
                       {sale.Party.balance > 0 && (
                         <div className="text-blue-600">
-                          Balance: ${sale.Party.balance.toFixed(2)}
+                          Balance: रु.{sale.Party.balance.toFixed(2)}
                         </div>
                       )}
                     </div>

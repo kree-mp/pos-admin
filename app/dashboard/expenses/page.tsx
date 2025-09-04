@@ -286,10 +286,10 @@ export default function ExpenseReportsView() {
               <span className="text-xs text-red-600">Total Expenses</span>
             </div>
             <p className="text-lg font-bold text-red-700">
-              ${expenseSummary.totalExpenses.toFixed(2)}
+              रु.{expenseSummary.totalExpenses.toFixed(2)}
             </p>
             <p className="text-xs text-red-600 mt-1">
-              Avg: ${expenseSummary.avgExpenseValue.toFixed(2)}
+              Avg: रु.{expenseSummary.avgExpenseValue.toFixed(2)}
             </p>
           </CardContent>
         </Card>
@@ -330,7 +330,7 @@ export default function ExpenseReportsView() {
                     <span className="text-sm font-medium">{category}</span>
                   </div>
                   <span className="text-sm font-bold text-red-600">
-                    ${amount.toFixed(2)}
+                    रु.{amount.toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -402,7 +402,7 @@ export default function ExpenseReportsView() {
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-red-600 text-lg">
-                        ${expense.amount.toFixed(2)}
+                        रु.{expense.amount.toFixed(2)}
                       </p>
                       <Badge
                         className={getCategoryColor(
