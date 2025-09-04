@@ -2,13 +2,31 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, ArrowLeft, Loader2, Plus, Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import useTables from "@/hooks/use-tables";
+import { TableFormDialog } from "@/components/table-form-dialog";
+import { DeleteTableDialog } from "@/components/delete-table-dialog";
+
+interface Table {
+  id: number;
+  name: string;
+  status: "available" | "unavailable" | "reserved";
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function TablesPage() {
   const router = useRouter();
   const { data: tables, isLoading, error } = useTables();
+  
+  // Dialog states
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -25,6 +43,18 @@ export default function TablesPage() {
 
   const handleTableClick = (tableId: number) => {
     router.push(`/dashboard/tables/${tableId}`);
+  };
+
+  const handleEditTable = (table: Table, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTable(table);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteTable = (table: Table, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTable(table);
+    setIsDeleteDialogOpen(true);
   };
 
   if (isLoading) {
@@ -56,13 +86,22 @@ export default function TablesPage() {
   return (
     <div className="space-y-4 p-4">
       <div>
-        <div
-          onClick={() => {
-            router.back();
-          }}
-          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
-        >
-          <ArrowLeft className="text-3xl" />
+        <div className="flex items-center justify-between mb-4">
+          <div
+            onClick={() => {
+              router.back();
+            }}
+            className="px-3 py-2 bg-gray-300 rounded-md inline-block cursor-pointer"
+          >
+            <ArrowLeft className="text-3xl" />
+          </div>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Table
+          </Button>
         </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">
           Table Management
@@ -112,7 +151,7 @@ export default function TablesPage() {
           {tables.map((table) => (
             <Card
               key={table.id}
-              className="border border-border cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95"
+              className="border border-border cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95 relative"
               onClick={() => handleTableClick(table.id)}
             >
               <CardContent className="p-4">
@@ -140,7 +179,7 @@ export default function TablesPage() {
                   </Badge>
 
                   <div className="pt-2 border-t border-border/50">
-                    <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-2">
                       <Clock className="w-3 h-3" />
                       <span>
                         Updated:{" "}
@@ -149,22 +188,44 @@ export default function TablesPage() {
                     </div>
 
                     {table.status === "unavailable" && (
-                      <p className="text-xs text-red-600 mt-1 font-medium">
+                      <p className="text-xs text-red-600 mt-1 font-medium mb-2">
                         Currently Unavailable
                       </p>
                     )}
 
                     {table.status === "reserved" && (
-                      <p className="text-xs text-yellow-600 mt-1 font-medium">
+                      <p className="text-xs text-yellow-600 mt-1 font-medium mb-2">
                         Reserved
                       </p>
                     )}
 
                     {table.status === "available" && (
-                      <p className="text-xs text-green-600 mt-1 font-medium">
+                      <p className="text-xs text-green-600 mt-1 font-medium mb-2">
                         Ready for Service
                       </p>
                     )}
+
+                    {/* Action buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => handleEditTable(table, e)}
+                        className="flex-1 h-8 text-xs"
+                      >
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => handleDeleteTable(table, e)}
+                        className="flex-1 h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -184,6 +245,26 @@ export default function TablesPage() {
           </p>
         </div>
       )}
+
+      {/* Dialog components */}
+      <TableFormDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        mode="create"
+      />
+
+      <TableFormDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        mode="edit"
+        table={selectedTable}
+      />
+
+      <DeleteTableDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        table={selectedTable}
+      />
     </div>
   );
 }
