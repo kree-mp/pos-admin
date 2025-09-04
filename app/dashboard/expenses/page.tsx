@@ -5,6 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import useExpenseReports, {
   useExpenseReportsDateRange,
   TimePeriod,
@@ -22,9 +31,12 @@ import {
   ChevronRight,
   Calendar,
   Package,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { getUserIdFromLocalStorage } from "@/lib/utils";
 
 const TIME_PERIODS: { value: TimePeriod; label: string }[] = [
   { value: "1day", label: "Today" },
@@ -33,6 +45,35 @@ const TIME_PERIODS: { value: TimePeriod; label: string }[] = [
   { value: "1month", label: "1 Month" },
   { value: "6months", label: "6 Months" },
 ];
+
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+if (!baseUrl) throw new Error("API Base URL is not defined");
+
+interface ExpenseCategory {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+interface PaymentMethod {
+  id: number;
+  name: string;
+}
+
+interface ExpenseFormData {
+  title: string;
+  description: string;
+  amount: string;
+  paymentMethodId: number;
+  categoryId: number;
+  date: Date;
+  referenceNo: string;
+}
+
+interface NewCategoryData {
+  name: string;
+  description: string;
+}
 
 export default function ExpenseReportsView() {
   const router = useRouter();
@@ -43,7 +84,175 @@ export default function ExpenseReportsView() {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [expenseForm, setExpenseForm] = useState<ExpenseFormData>({
+    title: "",
+    description: "",
+    amount: "",
+    paymentMethodId: 0,
+    categoryId: 0,
+    date: new Date(),
+    referenceNo: "",
+  });
+  const [newCategory, setNewCategory] = useState<NewCategoryData>({
+    name: "",
+    description: "",
+  });
+
   const itemsPerPage = 20;
+
+  const fetchCategoriesAndPaymentMethods = async () => {
+    try {
+      const userId = getUserIdFromLocalStorage();
+      const headers: Record<string, string> = userId ? { userId } : {};
+
+      const [categoriesResponse, paymentMethodsResponse] = await Promise.all([
+        fetch(`${baseUrl}/expense-categories`, { headers }),
+        fetch(`${baseUrl}/payment-methods`, { headers }),
+      ]);
+
+      if (categoriesResponse.ok) {
+        const categoriesData = await categoriesResponse.json();
+        setCategories(categoriesData.data || []);
+      }
+
+      if (paymentMethodsResponse.ok) {
+        const paymentMethodsData = await paymentMethodsResponse.json();
+        setPaymentMethods(paymentMethodsData.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast("Error loading form data");
+    }
+  };
+
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Check if categoryId and paymentMethodId are valid (not 0)
+    if (
+      !expenseForm.title ||
+      !expenseForm.description ||
+      !expenseForm.amount ||
+      expenseForm.categoryId === 0 ||
+      expenseForm.paymentMethodId === 0
+    ) {
+      toast("Please fill in all required fields");
+      return;
+    }
+
+    const userId = getUserIdFromLocalStorage();
+    if (!userId) {
+      toast("User not authenticated");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const requestBody = {
+        title: expenseForm.title,
+        description: expenseForm.description,
+        amount: parseFloat(expenseForm.amount),
+        paymentMethodId: expenseForm.paymentMethodId,
+        categoryId: expenseForm.categoryId,
+        date: expenseForm.date.toISOString().split("T")[0],
+        referenceNo: expenseForm.referenceNo || null,
+        createdBy: parseInt(userId),
+      };
+
+      const response = await fetch(`${baseUrl}/expenses`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          userId,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        toast.success("Expense added successfully");
+        setIsExpenseDialogOpen(false);
+        setExpenseForm({
+          title: "",
+          description: "",
+          amount: "",
+          paymentMethodId: 0,
+          categoryId: 0,
+          date: new Date(),
+          referenceNo: "",
+        });
+
+        window.location.reload();
+      } else {
+        const errorData = await response.json();
+
+        toast(errorData.message || "Failed to add expense");
+      }
+    } catch (error) {
+      console.error("Error submitting expense:", error);
+      toast("Failed to add expense");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newCategory.name) {
+      toast("Category name is required");
+      return;
+    }
+
+    const userId = getUserIdFromLocalStorage();
+    if (!userId) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${baseUrl}/expense-categories`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          userId,
+        },
+        body: JSON.stringify({
+          name: newCategory.name,
+          description: newCategory.description || null,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+
+        toast("Category added successfully");
+        setIsCategoryDialogOpen(false);
+        setNewCategory({ name: "", description: "" });
+
+        const newCat = result.data;
+        setCategories((prev) => [...prev, newCat]);
+        setExpenseForm((prev) => ({ ...prev, categoryId: newCat.id }));
+      } else {
+        const errorData = await response.json();
+
+        toast(errorData.message || "Failed to add category");
+      }
+    } catch (error) {
+      console.error("Error adding category:", error);
+      toast("Failed to add category");
+    }
+  };
+
+  const openExpenseDialog = () => {
+    setIsExpenseDialogOpen(true);
+    fetchCategoriesAndPaymentMethods();
+  };
 
   const { data: periodExpenseData, isLoading: isPeriodLoading } =
     useExpenseReports(selectedPeriod);
@@ -216,6 +425,14 @@ export default function ExpenseReportsView() {
               Track your business expenses over time
             </p>
           </div>
+          <Button
+            onClick={openExpenseDialog}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New
+          </Button>
         </div>
 
         {/* Filter Controls */}
@@ -507,6 +724,231 @@ export default function ExpenseReportsView() {
           </Card>
         )}
       </div>
+
+      {/* Add Expense Dialog */}
+      <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
+        <DialogContent className="max-w-2xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Add New Expense</DialogTitle>
+            <DialogClose onClose={() => setIsExpenseDialogOpen(false)} />
+          </DialogHeader>
+
+          <form onSubmit={handleExpenseSubmit} className="p-6 pt-0 space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Title *</Label>
+              <Input
+                type="text"
+                value={expenseForm.title}
+                onChange={(e) =>
+                  setExpenseForm((prev) => ({ ...prev, title: e.target.value }))
+                }
+                placeholder="Enter expense title"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Description *</Label>
+              <Input
+                type="text"
+                value={expenseForm.description}
+                onChange={(e) =>
+                  setExpenseForm((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Enter expense description"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Amount *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={expenseForm.amount}
+                onChange={(e) =>
+                  setExpenseForm((prev) => ({
+                    ...prev,
+                    amount: e.target.value,
+                  }))
+                }
+                placeholder="0.00"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Payment Method *</Label>
+              <Select
+                options={[
+                  { value: 0, label: "Select payment method" },
+                  ...paymentMethods.map((method) => ({
+                    value: method.id,
+                    label: method.name,
+                  })),
+                ]}
+                value={expenseForm.paymentMethodId}
+                onValueChange={(value) =>
+                  setExpenseForm((prev) => ({
+                    ...prev,
+                    paymentMethodId: Number(value),
+                  }))
+                }
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Category *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCategoryDialogOpen(true)}
+                  className="h-7 px-2 text-xs"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add New
+                </Button>
+              </div>
+              <Select
+                options={[
+                  { value: 0, label: "Select category" },
+                  ...categories.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  })),
+                ]}
+                value={expenseForm.categoryId}
+                onValueChange={(value) =>
+                  setExpenseForm((prev) => ({
+                    ...prev,
+                    categoryId: Number(value),
+                  }))
+                }
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Date</Label>
+              <Input
+                type="text"
+                value={expenseForm.date.toLocaleDateString()}
+                disabled
+                className="mt-1 bg-gray-100 text-gray-600 cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Reference No (Optional)
+              </Label>
+              <Input
+                type="text"
+                value={expenseForm.referenceNo}
+                onChange={(e) =>
+                  setExpenseForm((prev) => ({
+                    ...prev,
+                    referenceNo: e.target.value,
+                  }))
+                }
+                placeholder="Enter reference number"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsExpenseDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmitting ? "Adding..." : "Add Expense"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Category Dialog */}
+      <Dialog
+        open={isCategoryDialogOpen}
+        onOpenChange={setIsCategoryDialogOpen}
+      >
+        <DialogContent className="max-w-xl w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogClose onClose={() => setIsCategoryDialogOpen(false)} />
+          </DialogHeader>
+
+          <form onSubmit={handleCategorySubmit} className="p-6 pt-0 space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Category Name *</Label>
+              <Input
+                type="text"
+                value={newCategory.name}
+                onChange={(e) =>
+                  setNewCategory((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Enter category name"
+                required
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                Description (Optional)
+              </Label>
+              <Input
+                type="text"
+                value={newCategory.description}
+                onChange={(e) =>
+                  setNewCategory((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
+                placeholder="Enter category description"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCategoryDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Add Category
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

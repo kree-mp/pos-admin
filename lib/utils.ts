@@ -7,24 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getUserIdFromLocalStorage(): string | null {
   try {
-    const item = localStorage.getItem("posapp_user");
+    const item = localStorage.getItem("userId");
 
     if (!item) return null;
 
-    const { user, expiry } = JSON.parse(item);
-
-    if (!user || !user.id || !expiry) {
-      console.warn("Invalid user data or expiry missing");
-      return null;
-    }
-
-    if (Date.now() > expiry) {
-      console.warn("Session expired, removing from localStorage");
-      localStorage.removeItem("posapp_user");
-      return null;
-    }
-
-    return String(user.id);
+    return String(item);
   } catch (error) {
     console.error("Error getting user ID from localStorage:", error);
     return null;

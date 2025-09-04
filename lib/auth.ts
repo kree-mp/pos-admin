@@ -1,5 +1,5 @@
 interface ILogin {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -9,7 +9,7 @@ if (!baseUrl) throw new Error("API URL is not defined");
 
 class Auth {
   async login(data: ILogin) {
-    const res = await fetch(`${baseUrl}/api/auth/login`, {
+    const res = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -17,11 +17,16 @@ class Auth {
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to login");
-    return res.json();
+
+    const response = await res.json();
+
+    await localStorage.setItem("userId", response.data.user.id);
+
+    return response.status;
   }
 
   async logout() {
-    const res = await fetch(`${baseUrl}/api/auth/logout`, {
+    const res = await fetch(`${baseUrl}/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

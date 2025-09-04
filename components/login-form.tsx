@@ -32,8 +32,8 @@ export function LoginForm() {
     setIsLoading(true);
     setError("");
     try {
-      await AuthService.login({ email, password });
-
+      const res = await AuthService.login({ username: email, password });
+      console.log("Login successful:", res);
       setEmail("");
       setPassword("");
 
@@ -74,7 +74,7 @@ export function LoginForm() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  type="email"
+                  type="text"
                   placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
