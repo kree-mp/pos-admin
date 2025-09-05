@@ -28,12 +28,15 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { Party, PartyTransaction } from "@/types/api-response";
+import { Button } from "@/components/ui/button";
+import AddParty from "./add-party";
 
 export default function PartiesPage() {
   const router = useRouter();
   const { data: partiesData, isLoading, error } = useParties();
   const [selectedPartyId, setSelectedPartyId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showAddPartyForm, setShowAddPartyForm] = useState(false);
 
   const { data: transactionsData, isLoading: transactionsLoading } = useParties(
     selectedPartyId || undefined
@@ -119,11 +122,19 @@ export default function PartiesPage() {
   return (
     <div className="space-y-4 p-4">
       <div>
-        <div
-          onClick={() => router.back()}
-          className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
-        >
-          <ArrowLeft className="text-3xl" />
+        <div className="flex justify-between items-center">
+          <div
+            onClick={() => router.back()}
+            className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
+          >
+            <ArrowLeft className="text-3xl" />
+          </div>
+          <Button
+            onClick={() => setShowAddPartyForm(true)}
+            className="flex justify-center items-center"
+          >
+            + Add
+          </Button>
         </div>
         <h2 className="text-lg font-semibold text-foreground mb-1">
           Parties Management
@@ -598,6 +609,12 @@ export default function PartiesPage() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddPartyForm} onOpenChange={setShowAddPartyForm}>
+        <DialogContent className="max-w-xl">
+          <AddParty onClose={() => setShowAddPartyForm(false)} />
         </DialogContent>
       </Dialog>
     </div>

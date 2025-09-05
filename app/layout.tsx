@@ -4,6 +4,7 @@ import { Cambay } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import { ReactQueryProvider } from "@/lib/provider";
+import { Toaster } from "sonner";
 
 const cambay = Cambay({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -64,6 +65,7 @@ export default function RootLayout({
       </head>
       <body className={`font-sans ${cambay.className}`}>
         <ReactQueryProvider>
+          <Toaster position="top-right" />
           <Suspense fallback={null}>{children}</Suspense>
           <script
             dangerouslySetInnerHTML={{
