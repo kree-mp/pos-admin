@@ -32,6 +32,7 @@ export default function useMenu() {
           return {
             category: {
               name: category.name,
+              id: category.id,
               items: categoryItems,
             },
           };

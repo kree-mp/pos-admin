@@ -5,11 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Star, DollarSign, ArrowLeft, Search, Edit3, Loader2, UtensilsCrossed, Package } from "lucide-react";
+import {
+  Star,
+  DollarSign,
+  ArrowLeft,
+  Search,
+  Edit3,
+  Loader2,
+  UtensilsCrossed,
+  Package,
+  Plus,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import useMenu from "@/hooks/use-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "@/components/ui/dialog";
+import AddItem from "./add-item";
 
 interface MenuItem {
   id: number;
@@ -43,16 +61,18 @@ export default function MenuItemsPage() {
     rate: 0,
   });
 
-  // Flatten all items from all categories for searching and display
-  const allItems = menuData?.flatMap(categoryData => 
-    categoryData.category.items || []
-  ) || [];
+  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
+  const [showNewItemForm, setShowNewItemForm] = useState(false);
 
-  // Filter items based on search query
-  const filteredItems = allItems.filter(item =>
-    item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.MenuCategory?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const allItems =
+    menuData?.flatMap((categoryData) => categoryData.category.items || []) ||
+    [];
+
+  const filteredItems = allItems.filter(
+    (item) =>
+      item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.MenuCategory?.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleEditItem = (item: MenuItem) => {
@@ -67,8 +87,7 @@ export default function MenuItemsPage() {
 
   const handleSaveEdit = () => {
     console.log("Updating item:", selectedItem?.id, "with data:", editFormData);
-    // Here you would typically make an API call to update the item
-    // For now, just console log the update
+
     setIsEditDialogOpen(false);
     setSelectedItem(null);
   };
@@ -85,21 +104,21 @@ export default function MenuItemsPage() {
 
   const getCategoryColor = (categoryName: string) => {
     const colorMap: { [key: string]: string } = {
-      "main": "bg-blue-100 text-blue-800",
-      "appetizer": "bg-green-100 text-green-800", 
-      "dessert": "bg-pink-100 text-pink-800",
-      "beverage": "bg-purple-100 text-purple-800",
-      "starter": "bg-yellow-100 text-yellow-800",
-      "snacks": "bg-orange-100 text-orange-800",
+      main: "bg-blue-100 text-blue-800",
+      appetizer: "bg-green-100 text-green-800",
+      dessert: "bg-pink-100 text-pink-800",
+      beverage: "bg-purple-100 text-purple-800",
+      starter: "bg-yellow-100 text-yellow-800",
+      snacks: "bg-orange-100 text-orange-800",
     };
-    
+
     return colorMap[categoryName.toLowerCase()] || "bg-gray-100 text-gray-800";
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -129,15 +148,36 @@ export default function MenuItemsPage() {
 
   return (
     <div className="space-y-4 p-4">
-      <div>
+      <div className="space-y-1">
         <div
           onClick={() => router.back()}
           className="px-3 py-2 bg-gray-300 rounded-md inline-block mb-4 cursor-pointer"
         >
           <ArrowLeft className="text-3xl" />
         </div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">Menu Items</h2>
-        <p className="text-sm text-muted-foreground">Manage your restaurant menu</p>
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            Menu Items
+          </h2>
+          <Button onClick={() => setShowNewItemForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Item
+          </Button>
+        </div>
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            Manage your restaurant menu
+          </p>
+
+          <Button
+            variant="outline"
+            onClick={() => setShowAddCategoryForm(true)}
+            className="ml-2 bg-gray-300"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Category
+          </Button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -159,7 +199,9 @@ export default function MenuItemsPage() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <UtensilsCrossed className="w-5 h-5 text-blue-600" />
-                <p className="text-2xl font-bold text-blue-700">{allItems.length}</p>
+                <p className="text-2xl font-bold text-blue-700">
+                  {allItems.length}
+                </p>
               </div>
               <p className="text-sm text-blue-600">Total Items</p>
             </div>
@@ -172,7 +214,7 @@ export default function MenuItemsPage() {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Package className="w-5 h-5 text-green-600" />
                 <p className="text-2xl font-bold text-green-700">
-                  {allItems.filter(item => item.isAvailable).length}
+                  {allItems.filter((item) => item.isAvailable).length}
                 </p>
               </div>
               <p className="text-sm text-green-600">Available</p>
@@ -199,15 +241,19 @@ export default function MenuItemsPage() {
       {filteredItems.length > 0 ? (
         <div className="space-y-3">
           {filteredItems.map((item) => (
-            <Card 
-              key={item.id} 
-              className={`border ${item.isAvailable ? "border-border" : "border-red-200 bg-red-50"}`}
+            <Card
+              key={item.id}
+              className={`border ${
+                item.isAvailable ? "border-border" : "border-red-200 bg-red-50"
+              }`}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold text-base">{item.itemName}</h4>
+                      <h4 className="font-semibold text-base">
+                        {item.itemName}
+                      </h4>
                       {!item.isAvailable && (
                         <Badge variant="destructive" className="text-xs">
                           Unavailable
@@ -217,7 +263,7 @@ export default function MenuItemsPage() {
                     <p className="text-sm text-muted-foreground mb-3">
                       {item.description || "No description available"}
                     </p>
-                    
+
                     {/* Item Details */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -228,12 +274,14 @@ export default function MenuItemsPage() {
                           </span>
                         </div>
                         {item.MenuCategory && (
-                          <Badge className={getCategoryColor(item.MenuCategory.name)}>
+                          <Badge
+                            className={getCategoryColor(item.MenuCategory.name)}
+                          >
                             {item.MenuCategory.name}
                           </Badge>
                         )}
                       </div>
-                      
+
                       <Button
                         variant="outline"
                         size="sm"
@@ -251,7 +299,9 @@ export default function MenuItemsPage() {
                 <div className="pt-3 border-t border-border/50">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>ID: #{item.id}</span>
-                    <span>Updated: {new Date(item.updatedAt).toLocaleDateString()}</span>
+                    <span>
+                      Updated: {new Date(item.updatedAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -263,9 +313,13 @@ export default function MenuItemsPage() {
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <UtensilsCrossed className="w-8 h-8 text-gray-400" />
           </div>
-          <p className="text-muted-foreground text-lg font-medium">No menu items found</p>
+          <p className="text-muted-foreground text-lg font-medium">
+            No menu items found
+          </p>
           <p className="text-muted-foreground text-sm">
-            {searchQuery ? "Try adjusting your search criteria" : "Menu items will appear here when they are added"}
+            {searchQuery
+              ? "Try adjusting your search criteria"
+              : "Menu items will appear here when they are added"}
           </p>
         </div>
       )}
@@ -283,7 +337,7 @@ export default function MenuItemsPage() {
             </DialogDescription>
             <DialogClose onClose={handleCloseDialog} />
           </DialogHeader>
-          
+
           <div className="p-6 pt-2 space-y-4">
             <div>
               <Label htmlFor="itemName" className="text-sm font-medium">
@@ -293,7 +347,12 @@ export default function MenuItemsPage() {
                 id="itemName"
                 type="text"
                 value={editFormData.itemName}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, itemName: e.target.value }))}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    itemName: e.target.value,
+                  }))
+                }
                 placeholder="Enter item name"
                 className="mt-1"
               />
@@ -307,7 +366,12 @@ export default function MenuItemsPage() {
                 id="description"
                 type="text"
                 value={editFormData.description}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter item description"
                 className="mt-1"
               />
@@ -322,7 +386,12 @@ export default function MenuItemsPage() {
                 type="number"
                 step="0.01"
                 value={editFormData.rate}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    rate: parseFloat(e.target.value) || 0,
+                  }))
+                }
                 placeholder="Enter item price"
                 className="mt-1"
               />
@@ -337,6 +406,18 @@ export default function MenuItemsPage() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showNewItemForm} onOpenChange={setShowNewItemForm}>
+        <DialogContent className="max-w-xl">
+          <AddItem onClose={() => setShowNewItemForm(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddCategoryForm} onOpenChange={setShowAddCategoryForm}>
+        <DialogContent className="max-w-xl">
+          <AddItem onClose={() => setShowAddCategoryForm(false)} />
         </DialogContent>
       </Dialog>
     </div>

@@ -26,4 +26,22 @@ const PartyTransactionFormSchema = z.object({
   description: z.string().min(1, "Description is required"),
 });
 
-export { PartyFormSchema, PartyTransactionFormSchema };
+const MenuCategoryFormSchema = z.object({
+  name: z.string().min(1, "Category name is required"),
+});
+
+const MenuItemFormSchema = z.object({
+  categoryId: z.string().min(1, "Category is required"),
+  itemName: z.string().min(1, "Item name is required"),
+  description: z.string().optional(),
+  rate: z.number().min(0.01, "Rate must be greater than zero"),
+  image: z.string().optional(),
+  isAvailable: z.boolean().optional().default(true),
+});
+
+export {
+  PartyFormSchema,
+  PartyTransactionFormSchema,
+  MenuCategoryFormSchema,
+  MenuItemFormSchema,
+};
