@@ -16,4 +16,14 @@ const PartyFormSchema = z.object({
   isActive: z.boolean().optional().default(true),
 });
 
-export { PartyFormSchema };
+const PartyTransactionFormSchema = z.object({
+  partyId: z.string().min(1, "Party is required"),
+  type: z.enum(["credit", "debit"], {
+    message: "Transaction type is required",
+  }),
+  amount: z.number().min(0.01, "Amount must be greater than zero"),
+  reference: z.string().optional(),
+  description: z.string().min(1, "Description is required"),
+});
+
+export { PartyFormSchema, PartyTransactionFormSchema };

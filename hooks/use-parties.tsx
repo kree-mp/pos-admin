@@ -1,6 +1,7 @@
 "use client";
 import {
   PartiesResponse,
+  Party,
   PartyTransactionsResponse,
 } from "@/types/api-response";
 import { useQuery } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ export default function useParties(partyId?: number) {
 
         if (partyId) {
           const possibleEndpoints = [
-            `${baseUrl}/party/transaactions/${partyId}`,
+            `${baseUrl}/party/transactions/${partyId}`,
             `${baseUrl}/parties/${partyId}/transactions`,
             `${baseUrl}/parties/transactions/${partyId}`,
             `${baseUrl}/party/transactions/${partyId}`,
@@ -65,8 +66,7 @@ export default function useParties(partyId?: number) {
           const res = await axios.get<PartiesResponse>(`${baseUrl}/parties`, {
             headers: userId ? { userId } : {},
           });
-          console.log("Parties data fetched:", res.data);
-          return res.data.data || [];
+          return res.data.data as Party[] || [];
         }
       } catch (error) {
         toast.error(

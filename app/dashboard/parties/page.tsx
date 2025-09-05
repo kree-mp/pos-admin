@@ -30,6 +30,7 @@ import { useState } from "react";
 import { Party, PartyTransaction } from "@/types/api-response";
 import { Button } from "@/components/ui/button";
 import AddParty from "./add-party";
+import AddPartyTransaction from "./add-party-transaction";
 
 export default function PartiesPage() {
   const router = useRouter();
@@ -37,6 +38,7 @@ export default function PartiesPage() {
   const [selectedPartyId, setSelectedPartyId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [showAddPartyForm, setShowAddPartyForm] = useState(false);
+  const [showAddEntryForm, setShowAddEntryForm] = useState(false);
 
   const { data: transactionsData, isLoading: transactionsLoading } = useParties(
     selectedPartyId || undefined
@@ -136,9 +138,19 @@ export default function PartiesPage() {
             + Add
           </Button>
         </div>
-        <h2 className="text-lg font-semibold text-foreground mb-1">
-          Parties Management
-        </h2>
+
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            Parties Management
+          </h2>
+          <Button
+            variant="outline"
+            onClick={() => setShowAddEntryForm(true)}
+            className="bg-gray-300 "
+          >
+            Add Entry
+          </Button>
+        </div>
         <p className="text-sm text-muted-foreground">
           Manage customers and suppliers
         </p>
@@ -615,6 +627,11 @@ export default function PartiesPage() {
       <Dialog open={showAddPartyForm} onOpenChange={setShowAddPartyForm}>
         <DialogContent className="max-w-xl">
           <AddParty onClose={() => setShowAddPartyForm(false)} />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showAddEntryForm} onOpenChange={setShowAddEntryForm}>
+        <DialogContent className="max-w-xl">
+          <AddPartyTransaction onClose={() => setShowAddEntryForm(false)} />
         </DialogContent>
       </Dialog>
     </div>
