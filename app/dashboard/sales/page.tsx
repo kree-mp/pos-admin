@@ -18,9 +18,16 @@ import {
   Receipt,
   ChevronLeft,
   ChevronRight,
+  PencilLine,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SalesView() {
   const router = useRouter();
@@ -29,6 +36,8 @@ export default function SalesView() {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showEditSalesForm, setShowEditSalesForm] = useState(false);
+
   const itemsPerPage = 20;
 
   const { filteredSales, totalPages, currentPageData } = useMemo(() => {
@@ -256,6 +265,13 @@ export default function SalesView() {
                       <Badge className={getStatusColor(sale.orderStatus)}>
                         {sale.orderStatus}
                       </Badge>
+
+                      <div
+                        onClick={() => setShowEditSalesForm(true)}
+                        className="w-8 h-8 bg-gray-200 rounded-full p-2 shadow-md cursor-pointer hover:bg-gray-300 transition-colors"
+                      >
+                        <PencilLine className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -445,6 +461,15 @@ export default function SalesView() {
             </CardContent>
           </Card>
         )}
+
+        <Dialog open={showEditSalesForm} onOpenChange={setShowEditSalesForm}>
+          <DialogHeader>
+            <DialogTitle>Edit Sales Record</DialogTitle>
+          </DialogHeader>
+          <DialogContent>
+            <form></form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
