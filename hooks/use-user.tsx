@@ -23,7 +23,6 @@ export default function useUser() {
           headers: userId ? { userId } : {},
         });
 
-        console.log("Users data fetched:", res.data.data);
 
         return res.data.data as UsersResponse["data"];
       } catch (error) {

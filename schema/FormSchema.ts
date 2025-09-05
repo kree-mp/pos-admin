@@ -39,9 +39,20 @@ const MenuItemFormSchema = z.object({
   isAvailable: z.boolean().optional().default(true),
 });
 
+const UserFormSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+
+  email: z.string().optional(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "waiter"], {
+    message: "Role is required",
+  }),
+});
+
 export {
   PartyFormSchema,
   PartyTransactionFormSchema,
   MenuCategoryFormSchema,
   MenuItemFormSchema,
+  UserFormSchema,
 };
