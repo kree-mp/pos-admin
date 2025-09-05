@@ -134,23 +134,6 @@ export function LoginForm() {
             </form>
           </CardContent>
         </Card>
-
-        {/* Demo Credentials */}
-        <Card className="border-dashed bg-muted/50">
-          <CardContent className="pt-4">
-            <p className="text-xs text-muted-foreground text-center mb-2">
-              Demo Credentials:
-            </p>
-            <div className="text-xs text-center space-y-1">
-              <p>
-                <strong>Email:</strong> admin@example.com
-              </p>
-              <p>
-                <strong>Password:</strong> admin123
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

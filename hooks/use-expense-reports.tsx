@@ -130,7 +130,6 @@ export function useExpenseReportsDateRange(startDate?: string, endDate?: string)
           }
         );
 
-        console.log("Expense reports data fetched:", res.data.data);
         return res.data.data;
       } catch (error) {
         toast.error("Error getting expense reports");

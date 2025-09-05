@@ -15,6 +15,7 @@ import {
   UtensilsCrossed,
   Package,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,6 +29,9 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import AddItem from "./add-item";
+import AddCategory from "./add-category";
+import { toast } from "sonner";
+import axios from "axios";
 
 interface MenuItem {
   id: number;
@@ -51,29 +55,47 @@ interface MenuItem {
 
 export default function MenuItemsPage() {
   const router = useRouter();
-  const { data: menuData, isLoading, error } = useMenu();
+  const { data: menuData, isLoading, error, refetch } = useMenu();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<number | "all">(
+    "all"
+  );
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editFormData, setEditFormData] = useState({
     itemName: "",
     description: "",
     rate: 0,
+    categoryId: 0,
+    isAvailable: true,
   });
 
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
   const [showNewItemForm, setShowNewItemForm] = useState(false);
 
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
   const allItems =
     menuData?.flatMap((categoryData) => categoryData.category.items || []) ||
     [];
 
-  const filteredItems = allItems.filter(
-    (item) =>
+  const allCategories =
+    menuData?.map((categoryData) => categoryData.category) || [];
+
+  const filteredItems = allItems.filter((item) => {
+    const matchesSearch =
       item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.MenuCategory?.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      item.MenuCategory?.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "all" || item.categoryId === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
 
   const handleEditItem = (item: MenuItem) => {
     setSelectedItem(item);
@@ -81,15 +103,51 @@ export default function MenuItemsPage() {
       itemName: item.itemName,
       description: item.description || "",
       rate: item.rate,
+      categoryId: item.categoryId,
+      isAvailable: item.isAvailable,
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
-    console.log("Updating item:", selectedItem?.id, "with data:", editFormData);
+  const handleDeleteItem = (item: MenuItem) => {
+    setItemToDelete(item);
+    setIsDeleteDialogOpen(true);
+  };
 
-    setIsEditDialogOpen(false);
-    setSelectedItem(null);
+  const handleSaveEdit = async () => {
+    if (!selectedItem || !baseUrl) return;
+
+    setIsSubmitting(true);
+    try {
+      await axios.put(`${baseUrl}/menu/items/${selectedItem.id}`, editFormData);
+      toast.success("Menu item updated successfully");
+      setIsEditDialogOpen(false);
+      setSelectedItem(null);
+      refetch();
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast.error("Failed to update menu item");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete || !baseUrl) return;
+
+    setIsSubmitting(true);
+    try {
+      await axios.delete(`${baseUrl}/menu/items/${itemToDelete.id}`);
+      toast.success("Menu item deleted successfully");
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast.error("Failed to delete menu item");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -99,6 +157,8 @@ export default function MenuItemsPage() {
       itemName: "",
       description: "",
       rate: 0,
+      categoryId: 0,
+      isAvailable: true,
     });
   };
 
@@ -155,6 +215,7 @@ export default function MenuItemsPage() {
         >
           <ArrowLeft className="text-3xl" />
         </div>
+
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-foreground mb-1">
             Menu Items
@@ -164,6 +225,7 @@ export default function MenuItemsPage() {
             Add New Item
           </Button>
         </div>
+
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
             Manage your restaurant menu
@@ -192,6 +254,29 @@ export default function MenuItemsPage() {
         />
       </div>
 
+      {/* Category Filter - Horizontal Scrollable */}
+      <div className="relative">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <Button
+            variant={selectedCategory === "all" ? "default" : "outline"}
+            onClick={() => setSelectedCategory("all")}
+            className="whitespace-nowrap flex-shrink-0"
+          >
+            All
+          </Button>
+          {allCategories.map((category) => (
+            <Button
+              key={category.id}
+              variant={selectedCategory === category.id ? "default" : "outline"}
+              onClick={() => setSelectedCategory(category.id)}
+              className="whitespace-nowrap flex-shrink-0"
+            >
+              {category.name}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="bg-blue-50 border-blue-200">
@@ -200,10 +285,12 @@ export default function MenuItemsPage() {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <UtensilsCrossed className="w-5 h-5 text-blue-600" />
                 <p className="text-2xl font-bold text-blue-700">
-                  {allItems.length}
+                  {filteredItems.length}
                 </p>
               </div>
-              <p className="text-sm text-blue-600">Total Items</p>
+              <p className="text-sm text-blue-600">
+                {selectedCategory === "all" ? "Total Items" : "Filtered Items"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -214,7 +301,7 @@ export default function MenuItemsPage() {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Package className="w-5 h-5 text-green-600" />
                 <p className="text-2xl font-bold text-green-700">
-                  {allItems.filter((item) => item.isAvailable).length}
+                  {filteredItems.filter((item) => item.isAvailable).length}
                 </p>
               </div>
               <p className="text-sm text-green-600">Available</p>
@@ -228,7 +315,7 @@ export default function MenuItemsPage() {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="w-5 h-5 text-purple-600" />
                 <p className="text-2xl font-bold text-purple-700">
-                  {menuData?.length || 0}
+                  {allCategories.length}
                 </p>
               </div>
               <p className="text-sm text-purple-600">Categories</p>
@@ -282,15 +369,26 @@ export default function MenuItemsPage() {
                         )}
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditItem(item)}
-                        className="flex items-center gap-2"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditItem(item)}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteItem(item)}
+                          className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -317,8 +415,8 @@ export default function MenuItemsPage() {
             No menu items found
           </p>
           <p className="text-muted-foreground text-sm">
-            {searchQuery
-              ? "Try adjusting your search criteria"
+            {searchQuery || selectedCategory !== "all"
+              ? "Try adjusting your search criteria or category filter"
               : "Menu items will appear here when they are added"}
           </p>
         </div>
@@ -397,12 +495,75 @@ export default function MenuItemsPage() {
               />
             </div>
 
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isAvailable"
+                checked={editFormData.isAvailable}
+                onChange={(e) =>
+                  setEditFormData((prev) => ({
+                    ...prev,
+                    isAvailable: e.target.checked,
+                  }))
+                }
+                className="rounded"
+              />
+              <Label htmlFor="isAvailable" className="text-sm font-medium">
+                Available for sale
+              </Label>
+            </div>
+
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={handleCloseDialog}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveEdit} className="bg-primary">
+              <Button
+                onClick={handleSaveEdit}
+                disabled={isSubmitting}
+                className="bg-primary"
+              >
+                {isSubmitting && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Delete Menu Item
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &ldquo;{itemToDelete?.itemName}
+              &rdquo;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-6 pt-2">
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleConfirmDelete}
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                Delete Item
               </Button>
             </div>
           </div>
@@ -417,7 +578,7 @@ export default function MenuItemsPage() {
 
       <Dialog open={showAddCategoryForm} onOpenChange={setShowAddCategoryForm}>
         <DialogContent className="max-w-xl">
-          <AddItem onClose={() => setShowAddCategoryForm(false)} />
+          <AddCategory onClose={() => setShowAddCategoryForm(false)} />
         </DialogContent>
       </Dialog>
     </div>

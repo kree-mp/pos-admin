@@ -135,7 +135,7 @@ export default function PartiesPage() {
             onClick={() => setShowAddPartyForm(true)}
             className="flex justify-center items-center"
           >
-            + Add
+            + Add Party
           </Button>
         </div>
 

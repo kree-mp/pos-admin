@@ -23,8 +23,6 @@ export default function useSales() {
           headers: userId ? { userId } : {},
         });
 
-        console.log("Sales data fetched :", res.data.data);
-
         return res.data.data as CartResponse["data"];
       } catch (error) {
         toast.error("Error getting sales");
