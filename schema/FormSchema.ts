@@ -49,10 +49,31 @@ const UserFormSchema = z.object({
   }),
 });
 
+const SalesUpdateSchema = z.object({
+  paymentStatus: z.enum(["paid", "pending"], {
+    message: "Payment status is required",
+  }),
+  orderStatus: z.enum(["preparing", "ready", "served", "cancelled"], {
+    message: "Order status is required",
+  }),
+  paymentMethodId: z.string().min(1, "Payment method is required"),
+  orderType: z.enum(["dine-in", "takeaway", "delivery"], {
+    message: "Order type is required",
+  }),
+  tableId: z.string().min(1, "Table is required"),
+  partyId: z.string().min(1, "Customer is required"),
+  subTotal: z.number().min(0, "Subtotal must be positive"),
+  discount: z.number().min(0, "Discount cannot be negative").default(0),
+  tax: z.number().min(0, "Tax cannot be negative").default(0),
+  total: z.number().min(0, "Total must be positive"),
+  notes: z.string().optional(),
+});
+
 export {
   PartyFormSchema,
   PartyTransactionFormSchema,
   MenuCategoryFormSchema,
   MenuItemFormSchema,
   UserFormSchema,
+  SalesUpdateSchema,
 };
