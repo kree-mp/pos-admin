@@ -5,20 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import useSales from "@/hooks/use-sales";
-import useTables from "@/hooks/use-tables";
-import useParties from "@/hooks/use-parties";
-import { SalesUpdateSchema } from "@/schema/FormSchema";
-import { getUserIdFromLocalStorage } from "@/lib/utils";
+import EditSales from "./edit-sales";
 import {
   DollarSign,
   ShoppingCart,
@@ -33,141 +22,24 @@ import {
   PencilLine,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useState, useMemo } from "react";
 
 export default function SalesView() {
   const router = useRouter();
   const { data: salesData, isLoading } = useSales();
-  const { data: tablesData } = useTables();
-  const { data: partiesData } = useParties();
 
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditSalesForm, setShowEditSalesForm] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any>(null);
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-  const [isFormLoading, setIsFormLoading] = useState(false);
-
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const itemsPerPage = 20;
-
-  // Fetch payment methods on component mount
-  useEffect(() => {
-    const fetchPaymentMethods = async () => {
-      try {
-        const userId = getUserIdFromLocalStorage();
-        const headers: Record<string, string> = userId ? { userId } : {};
-        
-        const response = await fetch(`${baseUrl}/payment-methods`, { headers });
-        if (response.ok) {
-          const data = await response.json();
-          setPaymentMethods(data.data || []);
-        }
-      } catch (error) {
-        console.error("Error fetching payment methods:", error);
-        toast.error("Error loading payment methods");
-      }
-    };
-
-    fetchPaymentMethods();
-  }, [baseUrl]);
-
-  // Form state for sales update
-  const [formData, setFormData] = useState({
-    paymentStatus: "",
-    orderStatus: "",
-    paymentMethodId: "",
-    orderType: "",
-    tableId: "",
-    partyId: "",
-    subTotal: 0,
-    discount: 0,
-    tax: 0,
-    total: 0,
-    notes: "",
-  });
 
   // Handle opening edit form with sale data
   const handleEditSale = (sale: any) => {
     setSelectedSale(sale);
-    setFormData({
-      paymentStatus: sale.paymentStatus || "",
-      orderStatus: sale.orderStatus || "",
-      paymentMethodId: sale.paymentMethodId?.toString() || "",
-      orderType: sale.orderType || "",
-      tableId: sale.tableId?.toString() || "",
-      partyId: sale.partyId?.toString() || "",
-      subTotal: sale.subTotal || 0,
-      discount: sale.discount || 0,
-      tax: sale.tax || 0,
-      total: sale.total || 0,
-      notes: sale.notes || "",
-    });
     setShowEditSalesForm(true);
-  };
-
-  // Handle form submission
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsFormLoading(true);
-
-    try {
-      // Validate form data
-      const validatedData = SalesUpdateSchema.parse({
-        ...formData,
-        subTotal: Number(formData.subTotal),
-        discount: Number(formData.discount),
-        tax: Number(formData.tax),
-        total: Number(formData.total),
-      });
-
-      console.log("Submitted form data:", validatedData);
-
-      // Make API call to update sales
-      const userId = getUserIdFromLocalStorage();
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        ...(userId ? { userId } : {}),
-      };
-
-      const response = await fetch(`${baseUrl}/sales/${selectedSale.id}`, {
-        method: "PUT",
-        headers,
-        body: JSON.stringify(validatedData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update sales record");
-      }
-
-      const result = await response.json();
-      console.log("Update result:", result);
-
-      toast.success("Sales record updated successfully!");
-      setShowEditSalesForm(false);
-      
-      // You might want to refetch sales data here
-      // refetch();
-      
-    } catch (error) {
-      console.error("Error updating sales:", error);
-      if (error instanceof Error) {
-        toast.error(`Failed to update sales: ${error.message}`);
-      } else {
-        toast.error("Failed to update sales record");
-      }
-    } finally {
-      setIsFormLoading(false);
-    }
   };
 
   const { filteredSales, totalPages, currentPageData } = useMemo(() => {
@@ -592,279 +464,15 @@ export default function SalesView() {
           </Card>
         )}
 
-        <Dialog open={showEditSalesForm} onOpenChange={setShowEditSalesForm}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Edit Sales Record - {selectedSale?.invoiceNumber}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <form onSubmit={handleFormSubmit} className="space-y-4 p-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Payment Status */}
-                <div>
-                  <Label>Payment Status *</Label>
-                  <Select
-                    value={formData.paymentStatus}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, paymentStatus: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Order Status */}
-                <div>
-                  <Label>Order Status *</Label>
-                  <Select
-                    value={formData.orderStatus}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, orderStatus: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select order status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="preparing">Preparing</SelectItem>
-                      <SelectItem value="ready">Ready</SelectItem>
-                      <SelectItem value="served">Served</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Payment Method */}
-                <div>
-                  <Label>Payment Method *</Label>
-                  <Select
-                    value={formData.paymentMethodId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, paymentMethodId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method.id} value={method.id.toString()}>
-                          {method.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Order Type */}
-                <div>
-                  <Label>Order Type *</Label>
-                  <Select
-                    value={formData.orderType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, orderType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select order type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="dine-in">Dine In</SelectItem>
-                      <SelectItem value="takeaway">Takeaway</SelectItem>
-                      <SelectItem value="delivery">Delivery</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Table */}
-                <div>
-                  <Label>Table *</Label>
-                  <Select
-                    value={formData.tableId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, tableId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select table" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tablesData?.map((table: any) => (
-                        <SelectItem key={table.id} value={table.id.toString()}>
-                          {table.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Customer */}
-                <div>
-                  <Label>Customer *</Label>
-                  <Select
-                    value={formData.partyId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, partyId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {partiesData?.map((party: any) => (
-                        <SelectItem key={party.id} value={party.id.toString()}>
-                          {party.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Subtotal */}
-                <div>
-                  <Label>Subtotal *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.subTotal}
-                    onChange={(e) =>
-                      setFormData({ 
-                        ...formData, 
-                        subTotal: parseFloat(e.target.value) || 0 
-                      })
-                    }
-                    placeholder="Enter subtotal"
-                  />
-                </div>
-
-                {/* Discount */}
-                <div>
-                  <Label>Discount</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.discount}
-                    onChange={(e) =>
-                      setFormData({ 
-                        ...formData, 
-                        discount: parseFloat(e.target.value) || 0 
-                      })
-                    }
-                    placeholder="Enter discount"
-                  />
-                </div>
-
-                {/* Tax */}
-                <div>
-                  <Label>Tax</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.tax}
-                    onChange={(e) =>
-                      setFormData({ 
-                        ...formData, 
-                        tax: parseFloat(e.target.value) || 0 
-                      })
-                    }
-                    placeholder="Enter tax"
-                  />
-                </div>
-
-                {/* Total */}
-                <div>
-                  <Label>Total *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.total}
-                    onChange={(e) =>
-                      setFormData({ 
-                        ...formData, 
-                        total: parseFloat(e.target.value) || 0 
-                      })
-                    }
-                    placeholder="Enter total"
-                  />
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div>
-                <Label>Notes</Label>
-                <Input
-                  type="text"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  placeholder="Enter any additional notes"
-                />
-              </div>
-
-              {/* Current Sale Items Display */}
-              {selectedSale?.SalesItems && (
-                <div className="border-t pt-4">
-                  <Label className="text-sm font-medium mb-2 block">
-                    Current Items in Order:
-                  </Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {selectedSale.SalesItems.map((item: any, index: number) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
-                      >
-                        <div>
-                          <span className="font-medium">{item.itemName}</span>
-                          <span className="text-muted-foreground ml-2">
-                            x{item.quantity}
-                          </span>
-                          {item.notes && (
-                            <div className="text-xs text-muted-foreground italic">
-                              {item.notes}
-                            </div>
-                          )}
-                        </div>
-                        <span className="font-medium">
-                          रु.{item.totalPrice.toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowEditSalesForm(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={isFormLoading}
-                >
-                  {isFormLoading ? "Updating..." : "Update Sales"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <EditSales
+          isOpen={showEditSalesForm}
+          onOpenChange={setShowEditSalesForm}
+          selectedSale={selectedSale}
+          onSaleUpdated={() => {
+            // You can add any additional logic here if needed
+            // For example, refetch sales data
+          }}
+        />
       </div>
     </div>
   );

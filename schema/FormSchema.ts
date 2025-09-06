@@ -67,6 +67,15 @@ const SalesUpdateSchema = z.object({
   tax: z.number().min(0, "Tax cannot be negative").default(0),
   total: z.number().min(0, "Total must be positive"),
   notes: z.string().optional(),
+  salesItems: z.array(z.object({
+    id: z.number().optional(),
+    itemName: z.string().min(1, "Item name is required"),
+    quantity: z.number().min(1, "Quantity must be at least 1"),
+    rate: z.number().min(0, "Rate must be positive"),
+    totalPrice: z.number().min(0, "Total price must be positive"),
+    notes: z.string().optional(),
+    menuItemId: z.number().optional(),
+  })).optional(),
 });
 
 export {
