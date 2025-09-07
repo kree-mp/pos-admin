@@ -65,6 +65,7 @@ const SalesUpdateSchema = z.object({
   subTotal: z.number().min(0, "Subtotal must be positive"),
   discount: z.number().min(0, "Discount cannot be negative").default(0),
   tax: z.number().min(0, "Tax cannot be negative").default(0),
+  deliveryCharges: z.number().min(0, "Delivery charges cannot be negative").default(0),
   total: z.number().min(0, "Total must be positive"),
   notes: z.string().optional(),
   salesItems: z.array(z.object({

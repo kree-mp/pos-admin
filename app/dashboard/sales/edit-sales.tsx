@@ -45,6 +45,9 @@ interface EditSalesProps {
   onSaleUpdated?: () => void;
 }
 
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+if (!baseUrl) throw new Error("API base URL is not defined");
+
 export default function EditSales({
   isOpen,
   onOpenChange,
@@ -60,8 +63,6 @@ export default function EditSales({
   const [salesItems, setSalesItems] = useState<SalesItem[]>([]);
   const [showAddItems, setShowAddItems] = useState(false);
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-
   // Form state for sales update
   const [formData, setFormData] = useState({
     paymentStatus: "",
@@ -73,6 +74,7 @@ export default function EditSales({
     subTotal: 0,
     discount: 0,
     tax: 0,
+    deliveryCharges: 0,
     total: 0,
     notes: "",
   });
@@ -83,7 +85,7 @@ export default function EditSales({
       try {
         const userId = getUserIdFromLocalStorage();
         const headers: Record<string, string> = userId ? { userId } : {};
-        
+
         const response = await fetch(`${baseUrl}/payment-methods`, { headers });
         if (response.ok) {
           const data = await response.json();
@@ -113,32 +115,39 @@ export default function EditSales({
         subTotal: selectedSale.subTotal || 0,
         discount: selectedSale.discount || 0,
         tax: selectedSale.tax || 0,
+        deliveryCharges: selectedSale.deliveryCharges || 0,
         total: selectedSale.total || 0,
         notes: selectedSale.notes || "",
       });
 
       // Initialize sales items
-      const items = selectedSale.SalesItems?.map((item: any) => ({
-        id: item.id,
-        itemName: item.itemName,
-        quantity: item.quantity,
-        rate: item.rate || item.totalPrice / item.quantity,
-        totalPrice: item.totalPrice,
-        notes: item.notes || "",
-        menuItemId: item.menuItemId,
-      })) || [];
-      
+      const items =
+        selectedSale.SalesItems?.map((item: any) => ({
+          id: item.id,
+          itemName: item.itemName,
+          quantity: item.quantity,
+          rate: item.rate || item.totalPrice / item.quantity,
+          totalPrice: item.totalPrice,
+          notes: item.notes || "",
+          menuItemId: item.menuItemId,
+        })) || [];
+
       setSalesItems(items);
       calculateTotals(items, selectedSale.discount || 0, selectedSale.tax || 0);
     }
   }, [selectedSale, isOpen]);
 
   // Calculate totals based on items
-  const calculateTotals = (items: SalesItem[], discount: number = 0, tax: number = 0) => {
+  const calculateTotals = (
+    items: SalesItem[],
+    discount: number = 0,
+    tax: number = 0,
+    deliveryCharges: number = 0
+  ) => {
     const subTotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const total = subTotal - discount + tax;
-    
-    setFormData(prev => ({
+    const total = subTotal - discount + tax + deliveryCharges;
+
+    setFormData((prev) => ({
       ...prev,
       subTotal,
       total,
@@ -148,11 +157,11 @@ export default function EditSales({
   // Handle item quantity change
   const updateItemQuantity = (index: number, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
+
     const updatedItems = [...salesItems];
     updatedItems[index].quantity = newQuantity;
     updatedItems[index].totalPrice = updatedItems[index].rate * newQuantity;
-    
+
     setSalesItems(updatedItems);
     calculateTotals(updatedItems, formData.discount, formData.tax);
   };
@@ -167,12 +176,15 @@ export default function EditSales({
   // Add new menu item to order
   const addMenuItem = (menuItem: any) => {
     const existingItemIndex = salesItems.findIndex(
-      item => item.menuItemId === menuItem.id
+      (item) => item.menuItemId === menuItem.id
     );
 
     if (existingItemIndex >= 0) {
       // Item already exists, increase quantity
-      updateItemQuantity(existingItemIndex, salesItems[existingItemIndex].quantity + 1);
+      updateItemQuantity(
+        existingItemIndex,
+        salesItems[existingItemIndex].quantity + 1
+      );
     } else {
       // Add new item
       const newItem: SalesItem = {
@@ -183,7 +195,7 @@ export default function EditSales({
         notes: "",
         menuItemId: menuItem.id,
       };
-      
+
       const updatedItems = [...salesItems, newItem];
       setSalesItems(updatedItems);
       calculateTotals(updatedItems, formData.discount, formData.tax);
@@ -191,10 +203,10 @@ export default function EditSales({
   };
 
   // Handle discount/tax changes
-  const handleFinancialChange = (field: 'discount' | 'tax', value: number) => {
+  const handleFinancialChange = (field: "discount" | "tax" | "deliveryCharges", value: number) => {
     const updatedFormData = { ...formData, [field]: value };
     setFormData(updatedFormData);
-    calculateTotals(salesItems, updatedFormData.discount, updatedFormData.tax);
+    calculateTotals(salesItems, updatedFormData.discount, updatedFormData.tax, updatedFormData.deliveryCharges);
   };
 
   // Handle form submission
@@ -213,7 +225,7 @@ export default function EditSales({
       });
 
       // Prepare sales items data
-      const salesItemsData = salesItems.map(item => ({
+      const salesItemsData = salesItems.map((item) => ({
         id: item.id,
         itemName: item.itemName,
         quantity: item.quantity,
@@ -253,7 +265,6 @@ export default function EditSales({
       toast.success("Sales record updated successfully!");
       onOpenChange(false);
       onSaleUpdated?.();
-      
     } catch (error) {
       console.error("Error updating sales:", error);
       if (error instanceof Error) {
@@ -274,19 +285,14 @@ export default function EditSales({
             Edit Sales Record - {selectedSale?.invoiceNumber}
           </DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleFormSubmit} className="space-y-6 p-4">
           {/* Basic Information */}
           <div className="grid grid-cols-2 gap-4">
             {/* Payment Status */}
             <div>
               <Label>Payment Status *</Label>
-              <Select
-                value={formData.paymentStatus}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, paymentStatus: value })
-                }
-              >
+              <Select value={formData.paymentStatus} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment status" />
                 </SelectTrigger>
@@ -300,12 +306,7 @@ export default function EditSales({
             {/* Order Status */}
             <div>
               <Label>Order Status *</Label>
-              <Select
-                value={formData.orderStatus}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, orderStatus: value })
-                }
-              >
+              <Select value={formData.orderStatus} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select order status" />
                 </SelectTrigger>
@@ -321,12 +322,7 @@ export default function EditSales({
             {/* Payment Method */}
             <div>
               <Label>Payment Method *</Label>
-              <Select
-                value={formData.paymentMethodId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, paymentMethodId: value })
-                }
-              >
+              <Select value={formData.paymentMethodId} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
@@ -343,12 +339,7 @@ export default function EditSales({
             {/* Order Type */}
             <div>
               <Label>Order Type *</Label>
-              <Select
-                value={formData.orderType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, orderType: value })
-                }
-              >
+              <Select value={formData.orderType} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select order type" />
                 </SelectTrigger>
@@ -363,12 +354,7 @@ export default function EditSales({
             {/* Table */}
             <div>
               <Label>Table *</Label>
-              <Select
-                value={formData.tableId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, tableId: value })
-                }
-              >
+              <Select value={formData.tableId} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select table" />
                 </SelectTrigger>
@@ -385,12 +371,7 @@ export default function EditSales({
             {/* Customer */}
             <div>
               <Label>Customer *</Label>
-              <Select
-                value={formData.partyId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, partyId: value })
-                }
-              >
+              <Select value={formData.partyId} disabled>
                 <SelectTrigger>
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
@@ -436,7 +417,9 @@ export default function EditSales({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => updateItemQuantity(index, item.quantity - 1)}
+                        onClick={() =>
+                          updateItemQuantity(index, item.quantity - 1)
+                        }
                         disabled={item.quantity <= 1}
                       >
                         <Minus className="w-3 h-3" />
@@ -448,7 +431,9 @@ export default function EditSales({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => updateItemQuantity(index, item.quantity + 1)}
+                        onClick={() =>
+                          updateItemQuantity(index, item.quantity + 1)
+                        }
                       >
                         <Plus className="w-3 h-3" />
                       </Button>
@@ -488,8 +473,8 @@ export default function EditSales({
                         </h4>
                         <div className="grid grid-cols-2 gap-2 mb-4">
                           {categoryData.category.items?.map((item: any) => (
-                            <Card 
-                              key={item.id} 
+                            <Card
+                              key={item.id}
                               className="p-3 cursor-pointer hover:bg-gray-50 border-dashed"
                               onClick={() => addMenuItem(item)}
                             >
@@ -528,7 +513,10 @@ export default function EditSales({
                 min="0"
                 value={formData.discount}
                 onChange={(e) =>
-                  handleFinancialChange('discount', parseFloat(e.target.value) || 0)
+                  handleFinancialChange(
+                    "discount",
+                    parseFloat(e.target.value) || 0
+                  )
                 }
                 placeholder="Enter discount"
               />
@@ -543,9 +531,27 @@ export default function EditSales({
                 min="0"
                 value={formData.tax}
                 onChange={(e) =>
-                  handleFinancialChange('tax', parseFloat(e.target.value) || 0)
+                  handleFinancialChange("tax", parseFloat(e.target.value) || 0)
                 }
                 placeholder="Enter tax"
+              />
+            </div>
+
+            {/* Delivery Charges */}
+            <div>
+              <Label>Delivery Charges</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.deliveryCharges || 0}
+                onChange={(e) =>
+                  handleFinancialChange(
+                    "deliveryCharges",
+                    parseFloat(e.target.value) || 0
+                  )
+                }
+                placeholder="Enter delivery charges"
               />
             </div>
           </div>
@@ -600,10 +606,7 @@ export default function EditSales({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isFormLoading}
-            >
+            <Button type="submit" disabled={isFormLoading}>
               {isFormLoading ? "Updating..." : "Update Sales"}
             </Button>
           </div>

@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -777,7 +783,7 @@ export default function ExpenseReportsView() {
                     amount: e.target.value,
                   }))
                 }
-                placeholder="0.00"
+                placeholder="Enter amount"
                 required
                 className="mt-1"
               />
@@ -786,55 +792,65 @@ export default function ExpenseReportsView() {
             <div>
               <Label className="text-sm font-medium">Payment Method *</Label>
               <Select
-                options={[
-                  { value: 0, label: "Select payment method" },
-                  ...paymentMethods.map((method) => ({
-                    value: method.id,
-                    label: method.name,
-                  })),
-                ]}
-                value={expenseForm.paymentMethodId}
+                value={expenseForm.paymentMethodId.toString()}
                 onValueChange={(value) =>
                   setExpenseForm((prev) => ({
                     ...prev,
                     paymentMethodId: Number(value),
                   }))
                 }
-                className="mt-1"
-              />
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select payment method</SelectItem>
+                  {paymentMethods.map((method) => (
+                    <SelectItem key={method.id} value={method.id.toString()}>
+                      {method.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Category *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCategoryDialogOpen(true)}
-                  className="h-7 px-2 text-xs"
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add New
-                </Button>
-              </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Category *</Label>
+
               <Select
-                options={[
-                  { value: 0, label: "Select category" },
-                  ...categories.map((category) => ({
-                    value: category.id,
-                    label: category.name,
-                  })),
-                ]}
-                value={expenseForm.categoryId}
+                value={expenseForm.categoryId.toString()}
                 onValueChange={(value) =>
                   setExpenseForm((prev) => ({
                     ...prev,
                     categoryId: Number(value),
                   }))
                 }
-                className="mt-1"
-              />
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Select category</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCategoryDialogOpen(true)}
+                  className="mt-2"
+                >
+                  Add Category
+                </Button>
+              </div>
             </div>
 
             <div>
