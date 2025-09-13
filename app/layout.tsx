@@ -2,6 +2,7 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Cambay } from "next/font/google";
 import { Suspense } from "react";
+import Loader from "./loading";
 import "./globals.css";
 import { ReactQueryProvider } from "@/lib/provider";
 import { Toaster } from "sonner";
@@ -66,7 +67,7 @@ export default function RootLayout({
       <body className={`font-sans ${cambay.className}`}>
         <ReactQueryProvider>
           <Toaster position="top-right" />
-          <Suspense fallback={null}>{children}</Suspense>
+          <Suspense fallback={<Loader />}>{children}</Suspense>
           <script
             dangerouslySetInnerHTML={{
               __html: `

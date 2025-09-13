@@ -22,7 +22,6 @@ export default function TablesPage() {
   const router = useRouter();
   const { data: tables, isLoading, error } = useTables();
   
-  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

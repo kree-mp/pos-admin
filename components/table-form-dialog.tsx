@@ -11,7 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useCreateTable, useUpdateTable } from "@/hooks/use-table-mutations";
 
@@ -43,14 +49,15 @@ export function TableFormDialog({
   mode,
 }: TableFormDialogProps) {
   const [name, setName] = useState("");
-  const [status, setStatus] = useState<"available" | "unavailable" | "reserved">(
-    "available"
-  );
+  const [status, setStatus] = useState<
+    "available" | "unavailable" | "reserved"
+  >("available");
 
   const createTableMutation = useCreateTable();
   const updateTableMutation = useUpdateTable();
 
-  const isLoading = createTableMutation.isPending || updateTableMutation.isPending;
+  const isLoading =
+    createTableMutation.isPending || updateTableMutation.isPending;
 
   // Reset form when dialog opens/closes or table changes
   useEffect(() => {
@@ -127,14 +134,23 @@ export function TableFormDialog({
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
-              options={statusOptions}
               value={status}
               onValueChange={(value) =>
                 setStatus(value as "available" | "unavailable" | "reserved")
               }
-              placeholder="Select status"
               disabled={isLoading}
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex gap-3">
