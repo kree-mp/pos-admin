@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,8 @@ import {
 import useExpenseReports, {
   useExpenseReportsDateRange,
   TimePeriod,
+  ExpenseReportResponse,
+  ExpenseReport,
 } from "@/hooks/use-expense-reports";
 import {
   DollarSign,
@@ -38,6 +41,8 @@ import {
   Calendar,
   Package,
   Plus,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
@@ -92,7 +97,10 @@ export default function ExpenseReportsView() {
 
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any>(null);
+  const [expenseToDelete, setExpenseToDelete] = useState<any>(null);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [expenseForm, setExpenseForm] = useState<ExpenseFormData>({
@@ -171,8 +179,15 @@ export default function ExpenseReportsView() {
         createdBy: parseInt(userId),
       };
 
-      const response = await fetch(`${baseUrl}/expenses`, {
-        method: "POST",
+      // Determine if we're editing or creating
+      const isEditing = editingExpense !== null;
+      const url = isEditing
+        ? `${baseUrl}/expenses/${editingExpense.id}`
+        : `${baseUrl}/expenses`;
+      const method = isEditing ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           userId,
@@ -181,8 +196,16 @@ export default function ExpenseReportsView() {
       });
 
       if (response.ok) {
-        toast.success("Expense added successfully");
+        if (isEditing) {
+          console.log("Updated expense ID:", editingExpense.id);
+          console.log("Updated expense data:", requestBody);
+          toast.success("Expense updated successfully");
+        } else {
+          toast.success("Expense added successfully");
+        }
+
         setIsExpenseDialogOpen(false);
+        setEditingExpense(null);
         setExpenseForm({
           title: "",
           description: "",
@@ -196,12 +219,17 @@ export default function ExpenseReportsView() {
         window.location.reload();
       } else {
         const errorData = await response.json();
-
-        toast(errorData.message || "Failed to add expense");
+        toast(
+          errorData.message ||
+            `Failed to ${isEditing ? "update" : "add"} expense`
+        );
       }
     } catch (error) {
-      console.error("Error submitting expense:", error);
-      toast("Failed to add expense");
+      console.error(
+        `Error ${editingExpense ? "updating" : "submitting"} expense:`,
+        error
+      );
+      toast(`Failed to ${editingExpense ? "update" : "add"} expense`);
     } finally {
       setIsSubmitting(false);
     }
@@ -258,6 +286,34 @@ export default function ExpenseReportsView() {
   const openExpenseDialog = () => {
     setIsExpenseDialogOpen(true);
     fetchCategoriesAndPaymentMethods();
+  };
+
+  const handleEditExpense = (expense: any) => {
+    setEditingExpense(expense);
+    setExpenseForm({
+      title: expense.title || expense.description,
+      description: expense.description,
+      amount: expense.amount.toString(),
+      paymentMethodId: expense.PaymentMethod?.id || 0,
+      categoryId: expense.ExpenseCategory?.id || 0,
+      date: new Date(expense.date || expense.createdAt),
+      referenceNo: expense.referenceNo || "",
+    });
+    setIsExpenseDialogOpen(true);
+    fetchCategoriesAndPaymentMethods();
+  };
+
+  const handleDeleteExpense = (expense: ExpenseReport) => {
+    setExpenseToDelete(expense);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (expenseToDelete) {
+      console.log("Deleting expense with ID:", expenseToDelete.id);
+      setIsDeleteDialogOpen(false);
+      setExpenseToDelete(null);
+    }
   };
 
   const { data: periodExpenseData, isLoading: isPeriodLoading } =
@@ -634,6 +690,25 @@ export default function ExpenseReportsView() {
                       >
                         {expense.ExpenseCategory?.name || "Uncategorized"}
                       </Badge>
+                      {/* Edit and Delete buttons */}
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditExpense(expense)}
+                          className="h-8 px-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteExpense(expense)}
+                          className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -735,8 +810,15 @@ export default function ExpenseReportsView() {
       <Dialog open={isExpenseDialogOpen} onOpenChange={setIsExpenseDialogOpen}>
         <DialogContent className="max-w-2xl w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Add New Expense</DialogTitle>
-            <DialogClose onClose={() => setIsExpenseDialogOpen(false)} />
+            <DialogTitle>
+              {editingExpense ? "Edit Expense" : "Add New Expense"}
+            </DialogTitle>
+            <DialogClose
+              onClose={() => {
+                setIsExpenseDialogOpen(false);
+                setEditingExpense(null);
+              }}
+            />
           </DialogHeader>
 
           <form onSubmit={handleExpenseSubmit} className="p-6 pt-0 space-y-4">
@@ -885,7 +967,10 @@ export default function ExpenseReportsView() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsExpenseDialogOpen(false)}
+                onClick={() => {
+                  setIsExpenseDialogOpen(false);
+                  setEditingExpense(null);
+                }}
                 className="flex-1"
               >
                 Cancel
@@ -895,7 +980,13 @@ export default function ExpenseReportsView() {
                 disabled={isSubmitting}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {isSubmitting ? "Adding..." : "Add Expense"}
+                {isSubmitting
+                  ? editingExpense
+                    ? "Updating..."
+                    : "Adding..."
+                  : editingExpense
+                  ? "Update Expense"
+                  : "Add Expense"}
               </Button>
             </div>
           </form>
@@ -963,6 +1054,65 @@ export default function ExpenseReportsView() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Delete Expense</DialogTitle>
+            <DialogClose
+              onClose={() => {
+                setIsDeleteDialogOpen(false);
+                setExpenseToDelete(null);
+              }}
+            />
+          </DialogHeader>
+
+          <div className="p-6 pt-0">
+            <p className="text-sm text-muted-foreground mb-4">
+              Are you sure you want to delete this expense? This action cannot
+              be undone.
+            </p>
+
+            {expenseToDelete && (
+              <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                <h4 className="font-medium text-sm">
+                  {expenseToDelete.description}
+                </h4>
+                <p className="text-red-600 font-bold">
+                  रु.{expenseToDelete.amount.toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Category:{" "}
+                  {expenseToDelete.ExpenseCategory?.name || "Uncategorized"}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setExpenseToDelete(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={confirmDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
