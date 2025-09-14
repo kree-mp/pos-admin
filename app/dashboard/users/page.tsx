@@ -76,7 +76,7 @@ async function handlePwChange(id: number, pw: string) {
   }
 }
 
-export function UsersView() {
+export default function UsersPage() {
   const router = useRouter();
   const { data: users, isLoading, error } = useUser();
   const [showNewUserForm, setShowNewUserForm] = useState(false);
@@ -422,8 +422,4 @@ export function UsersView() {
       </Dialog>
     </div>
   );
-}
-
-export default function UsersPage() {
-  return <UsersView />;
 }
