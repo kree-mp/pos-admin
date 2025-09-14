@@ -24,7 +24,6 @@ const dashboardCards = [
     title: "Sales",
     description: "View sales reports",
     icon: DollarSign,
-    count: "रु.2,450",
     color: "text-green-600",
     bgColor: "bg-green-50",
   },
@@ -33,7 +32,6 @@ const dashboardCards = [
     title: "Expenses",
     description: "Track expenses",
     icon: Receipt,
-    count: "रु.890",
     color: "text-red-600",
     bgColor: "bg-red-50",
   },
@@ -42,7 +40,6 @@ const dashboardCards = [
     title: "Tables",
     description: "Table management",
     icon: Table,
-    count: "8",
     color: "text-purple-600",
     bgColor: "bg-purple-50",
   },
@@ -51,7 +48,6 @@ const dashboardCards = [
     title: "Parties",
     description: "Manage party bookings",
     icon: Calendar,
-    count: "12",
     color: "text-blue-600",
     bgColor: "bg-blue-50",
   },
@@ -60,7 +56,6 @@ const dashboardCards = [
     title: "Menu Items",
     description: "Manage menu",
     icon: UtensilsCrossed,
-    count: "45",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
   },
@@ -69,7 +64,6 @@ const dashboardCards = [
     title: "Users",
     description: "User management",
     icon: Users,
-    count: "23",
     color: "text-indigo-600",
     bgColor: "bg-indigo-50",
   },
@@ -78,7 +72,6 @@ const dashboardCards = [
     title: "Daybook",
     description: "Manage daily transactions",
     icon: BookOpenText,
-    count: "45",
     color: "text-orange-600",
     bgColor: "bg-indigo-50",
   },
@@ -182,9 +175,6 @@ export default function Dashboard() {
                       <div className={`p-2 rounded-lg ${card.bgColor}`}>
                         <IconComponent className={`w-5 h-5 ${card.color}`} />
                       </div>
-                      <span className="text-lg font-bold text-foreground">
-                        {card.count}
-                      </span>
                     </div>
                     <div>
                       <h3 className="font-medium text-foreground text-sm mb-1">

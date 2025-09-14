@@ -42,7 +42,7 @@ const AddItem = ({ onClose }: { onClose: () => void }) => {
     try {
       MenuItemFormSchema.safeParse(formData);
 
-      const res = await fetch(`${baseUrl}/menu/item`, {
+      const res = await fetch(`${baseUrl}/menu/items`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,7 +85,7 @@ const AddItem = ({ onClose }: { onClose: () => void }) => {
         <form onSubmit={handleSubmit}>
           <div>
             <Label>Category *</Label>
-            <Select>
+            <Select onValueChange={(value) => setFormData({ ...formData, categoryId: value })} value={formData.categoryId}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
