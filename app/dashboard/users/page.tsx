@@ -2,9 +2,20 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Phone, Shield, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  Shield,
+  ArrowLeft,
+  Loader2,
+  Pencil,
+  Trash2,
+  User as UserIcon,
+  Key,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import useUser from "@/hooks/use-user";
+import type { User } from "@/types/api-response";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,11 +25,66 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AddUserForm } from "./add-user";
+import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+if (!baseUrl) throw new Error("BASE_URL is not defined");
+
+async function deleteUserById(id: number | string) {
+  const res = await fetch(`${baseUrl}/users/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete user");
+}
+
+type UpdateUserData = Partial<Pick<User, "username" | "role">> & {
+  password?: string;
+};
+
+async function updateUserById(id: number | string, data: UpdateUserData) {
+  const res = await fetch(`${baseUrl}/users/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update user");
+  return await res.json();
+}
+
+async function handlePwChange(id: number, pw: string) {
+  if (!pw || pw.length < 6) {
+    toast.error("Password must be at least 6 characters long");
+    return false;
+  }
+
+  try {
+    const res = await fetch(`${baseUrl}/users/change-password/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newPassword: pw }),
+    });
+
+    if (!res.ok) throw new Error("Failed to update password");
+    toast.success("Password updated successfully");
+    return true;
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to update password");
+    return false;
+  }
+}
 
 export function UsersView() {
   const router = useRouter();
   const { data: users, isLoading, error } = useUser();
   const [showNewUserForm, setShowNewUserForm] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showPwForm, setShowPwForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
   const getRoleColor = (role: string) => {
     switch (role.toLowerCase()) {
@@ -99,6 +165,17 @@ export function UsersView() {
     );
   }
 
+  const handlePwSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const isSuccess = await handlePwChange(editUser!.id, newPassword);
+
+    if (isSuccess) {
+      setShowPwForm(false);
+      setEditUser(null);
+      setNewPassword("");
+    }
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div>
@@ -111,7 +188,13 @@ export function UsersView() {
           >
             <ArrowLeft className="text-3xl" />
           </div>
-          <Button onClick={() => setShowNewUserForm(true)} className="mb-4">
+          <Button
+            onClick={() => {
+              setShowNewUserForm(true);
+              setEditUser(null);
+            }}
+            className="mb-4"
+          >
             Add New User
           </Button>
         </div>
@@ -131,7 +214,7 @@ export function UsersView() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary" />
+                      <UserIcon className="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <h4 className="font-medium text-sm">{user.username}</h4>
@@ -145,6 +228,38 @@ export function UsersView() {
                         </Badge>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => {
+                        setEditUser(user);
+                        setShowNewUserForm(true);
+                      }}
+                      title="Edit user"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => {
+                        setEditUser(user);
+                        setShowPwForm(true);
+                      }}
+                      title="Edit user"
+                    >
+                      <Key className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      onClick={() => setDeleteUserId(user.id)}
+                      title="Delete user"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
@@ -185,12 +300,124 @@ export function UsersView() {
         )}
       </div>
 
-      <Dialog open={showNewUserForm} onOpenChange={setShowNewUserForm}>
+      {/* Add/Edit User Dialog */}
+      <Dialog
+        open={showNewUserForm}
+        onOpenChange={(open) => {
+          setShowNewUserForm(open);
+          if (!open) setEditUser(null);
+        }}
+      >
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{editUser ? "Edit User" : "Add New User"}</DialogTitle>
         </DialogHeader>
         <DialogContent>
-          <AddUserForm onClose={() => setShowNewUserForm(false)} />
+          <AddUserForm
+            onClose={() => {
+              setShowNewUserForm(false);
+              setEditUser(null);
+            }}
+            user={editUser ?? undefined}
+            onSubmit={async (formData: UpdateUserData) => {
+              if (editUser) {
+                const updateData: UpdateUserData = {};
+                if (
+                  formData.username &&
+                  formData.username !== editUser.username
+                )
+                  updateData.username = formData.username;
+                if (formData.role && formData.role !== editUser.role)
+                  updateData.role = formData.role;
+                if (formData.password) updateData.password = formData.password;
+                try {
+                  await updateUserById(editUser.id, updateData);
+                  setShowNewUserForm(false);
+                  setEditUser(null);
+                  router.refresh();
+                } catch {
+                  toast.error("Failed to update user");
+                }
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deleteUserId}
+        onOpenChange={(open) => {
+          if (!open) setDeleteUserId(null);
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Delete User</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
+          <div className="space-y-4 p-4">
+            <p>Are you sure you want to delete this user?</p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteUserId(null)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await deleteUserById(deleteUserId!);
+                    setDeleteUserId(null);
+                    router.refresh();
+                  } catch {
+                    toast.error("Failed to delete user");
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Delete"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog
+        open={showPwForm}
+        onOpenChange={(open) => {
+          setShowPwForm(open);
+          if (!open) setEditUser(null);
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>Change Password</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
+          <form onSubmit={handlePwSubmit} className="space-y-4 p-4">
+            <div className="space-y-4 p-4">
+              <Label>New Password for {editUser?.username}</Label>
+              <Input
+                type="password"
+                name="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+
+            <Button type="submit" className="w-full mb-4">
+              Update Password
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
