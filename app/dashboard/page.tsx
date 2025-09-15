@@ -75,6 +75,15 @@ const dashboardCards = [
     color: "text-orange-600",
     bgColor: "bg-indigo-50",
   },
+  {
+    id: "backup",
+    title: "Backup",
+    description: "Manage backups",
+    icon: BookOpenText,
+    color: "text-green-600",
+    bgColor: "bg-green-50",
+  },
+
 ];
 
 export default function Dashboard() {
